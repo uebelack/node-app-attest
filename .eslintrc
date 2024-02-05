@@ -1,0 +1,18 @@
+{
+    "parserOptions": {
+        "ecmaVersion": 2020
+    },
+    "rules": {
+        "max-len": [
+            2,
+            180
+        ]
+    },
+    "extends": "airbnb-base",
+    "plugins": [
+        "jest"
+    ],
+    "env": {
+        "jest/globals": true
+    }
+}
