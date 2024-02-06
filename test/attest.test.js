@@ -2,10 +2,8 @@ import cbor from 'cbor';
 import attest from '../src/attest.js';
 import data from './data.json';
 
-const ATTESTATION = Buffer.from(data.ATTESTATION, 'base64');
-const CHALLENGE = Buffer.from(data.CHALLENGE, 'base64');
 const {
-  KEY_ID, CLIENT_CERTIFICATE, CLIENT_CERTIFICATE_INVALID, SUB_CA, SUB_CA_INVALID,
+  ATTESTATION, CHALLENGE, KEY_ID, CLIENT_CERTIFICATE, CLIENT_CERTIFICATE_INVALID, SUB_CA, SUB_CA_INVALID,
 } = data;
 
 describe('verifyAttestation', () => {

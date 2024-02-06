@@ -17,7 +17,7 @@ function attest(attestParams) {
   }
 
   return {
-    verifyAttestation(verifyAttestationParams) {
+    verifyAttestation: (verifyAttestationParams) => {
       const { attestation, challenge, keyId } = verifyAttestationParams;
 
       if (!attestation) {
@@ -35,7 +35,7 @@ function attest(attestParams) {
       let decodedAttestations;
 
       try {
-        decodedAttestations = cbor.decodeAllSync(attestation);
+        decodedAttestations = cbor.decodeAllSync(Buffer.from(attestation, 'base64'));
       } catch (e) {
         throw new Error('invalid attestation');
       }
@@ -75,20 +75,20 @@ function attest(attestParams) {
         throw new Error('sub CA certificate is not signed by Apple App Attestation Root CA');
       }
 
-      const clientCaCertificate = certificates.find((certificate) => certificate.subject.indexOf('Apple App Attestation CA 1') === -1);
+      const clientCertificate = certificates.find((certificate) => certificate.subject.indexOf('Apple App Attestation CA 1') === -1);
 
-      if (!clientCaCertificate) {
+      if (!clientCertificate) {
         throw new Error('no client CA certificate found');
       }
 
-      if (!clientCaCertificate.verify(subCaCertificate.publicKey)) {
+      if (!clientCertificate.verify(subCaCertificate.publicKey)) {
         throw new Error('client CA certificate is not signed by Apple App Attestation CA 1');
       }
 
       // 2. Create clientDataHash as the SHA256 hash of the one-time challenge your server sends to your
       //    app before performing the attestation, and append that hash to the end of the authenticator
       //    data (authData from the decoded object).
-      const clientDataHash = createHash('sha256').update(challenge).digest();
+      const clientDataHash = createHash('sha256').update(Buffer.from(challenge, 'base64')).digest();
 
       const nonceData = Buffer.concat([decodedAttestation.authData, clientDataHash]);
 
@@ -98,7 +98,7 @@ function attest(attestParams) {
       // 4. Obtain the value of the credCert extension with OID 1.2.840.113635.100.8.2, which is a DER-encoded ASN.1
       //    sequence. Decode the sequence and extract the single octet string that it contains. Verify that the
       //    string equals nonce.
-      const asn1 = asn1js.fromBER(clientCaCertificate.raw);
+      const asn1 = asn1js.fromBER(clientCertificate.raw);
       const certificate = new pkijs.Certificate({ schema: asn1.result });
       const extension = certificate.extensions.find((e) => e.extnID === '1.2.840.113635.100.8.2');
       try {
@@ -111,6 +111,12 @@ function attest(attestParams) {
       }
 
       // 5. Create the SHA256 hash of the public key in credCert, and verify that it matches the key identifier from your app
+      // const publicKey = await certificate.getPublicKey()
+      const publicKey = Buffer.from(certificate.subjectPublicKeyInfo.subjectPublicKey.valueBlock.valueHex);
+      const publicKeyHash = createHash('sha256').update(publicKey, 'hex').digest('base64');
+      if (publicKeyHash !== keyId) {
+        throw new Error('keyId does not match');
+      }
     },
   };
 }
