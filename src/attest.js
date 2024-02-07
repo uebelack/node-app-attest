@@ -6,6 +6,9 @@ import pkijs from 'pkijs';
 // eslint-disable-next-line max-len
 const APPLE_APP_ATTESTATION_ROOT_CA = new X509Certificate('-----BEGIN CERTIFICATE-----\nMIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijVoyFraWVIyd/dganmrduC1bmTBGwD\n-----END CERTIFICATE-----');
 
+const APPATTESTDEVELOP = Buffer.from('appattestdevelop').toString('hex');
+const APPATTESTPROD = Buffer.concat([Buffer.from('appattest'), Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])]).toString('hex');
+
 function attest(attestParams) {
   const { bundleIdentifier, teamIdentifier } = attestParams;
   if (!bundleIdentifier) {
@@ -18,7 +21,9 @@ function attest(attestParams) {
 
   return {
     verifyAttestation: (verifyAttestationParams) => {
-      const { attestation, challenge, keyId } = verifyAttestationParams;
+      const {
+        attestation, challenge, keyId, allowDevelopmentEnvironment, allowProductionEnvironment,
+      } = verifyAttestationParams;
 
       if (!attestation) {
         throw new Error('attestation is required');
@@ -50,9 +55,15 @@ function attest(attestParams) {
        || decodedAttestation.attStmt?.x5c?.length !== 2
        || !decodedAttestation.attStmt?.receipt
        || !decodedAttestation.authData
+       || !Buffer.isBuffer(decodedAttestation.attStmt.x5c[0])
+       || !Buffer.isBuffer(decodedAttestation.attStmt.x5c[1])
+       || !Buffer.isBuffer(decodedAttestation.attStmt.receipt)
+       || !Buffer.isBuffer(decodedAttestation.authData)
       ) {
         throw new Error('invalid attestation');
       }
+
+      const { authData, attStmt } = decodedAttestation;
 
       // https://developer.apple.com/documentation/devicecheck/validating_apps_that_connect_to_your_server
       // 1. Verify that the x5c array contains the intermediate and leaf certificates for App Attest,
@@ -60,7 +71,7 @@ function attest(attestParams) {
       //    Verify the validity of the certificates using Apple’s App Attest root certificate.
       let certificates;
       try {
-        certificates = decodedAttestation.attStmt.x5c.map((data) => new X509Certificate(data));
+        certificates = attStmt.x5c.map((data) => new X509Certificate(data));
       } catch (e) {
         throw new Error('invalid certificate');
       }
@@ -117,6 +128,40 @@ function attest(attestParams) {
       if (publicKeyHash !== keyId) {
         throw new Error('keyId does not match');
       }
+
+      // 6. Compute the SHA256 hash of your app’s App ID, and verify that it’s the same as the authenticator data’s RP ID hash.
+      const appIdHash = createHash('sha256').update(`${teamIdentifier}.${bundleIdentifier}`).digest('base64');
+      const rpiIdHash = authData.subarray(0, 32).toString('base64');
+
+      if (appIdHash !== rpiIdHash) {
+        throw new Error('appId does not match');
+      }
+
+      // 7. Verify that the authenticator data’s counter field equals 0.
+      const signCount = authData.subarray(33, 37).readInt32BE();
+      /* istanbul ignore if */
+      if (signCount !== 0) {
+        throw new Error('signCount is not 0');
+      }
+
+      // 8. Verify that the authenticator data’s aaguid field is either appattestdevelop if operating in the development
+      //    environment, or appattest followed by seven 0x00 bytes if operating in the production environment.
+      const aaguid = authData.subarray(37, 53).toString('hex');
+
+      /* istanbul ignore if */
+      if (aaguid !== APPATTESTDEVELOP && aaguid !== APPATTESTPROD) {
+        throw new Error('aaguid is not valid');
+      }
+
+      if (aaguid === APPATTESTDEVELOP && !allowDevelopmentEnvironment) {
+        throw new Error('attestation is from development environment, but development environment is not allowed');
+      }
+
+      if (aaguid === APPATTESTPROD && !allowProductionEnvironment) {
+        throw new Error('attestation is from production environment, but production environment is not allowed');
+      }
+
+      // 9. Verify that the authenticator data’s credentialId field is the same as the key identifier.
     },
   };
 }
