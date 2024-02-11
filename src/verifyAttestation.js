@@ -42,7 +42,7 @@ function verifyAttestation(params) {
   let decodedAttestations;
 
   try {
-    decodedAttestations = cbor.decodeAllSync(Buffer.from(attestation, 'base64'));
+    decodedAttestations = cbor.decodeAllSync(attestation);
   } catch (e) {
     throw new Error('invalid attestation');
   }
@@ -101,7 +101,7 @@ function verifyAttestation(params) {
   // 2. Create clientDataHash as the SHA256 hash of the one-time challenge your server sends to your
   //    app before performing the attestation, and append that hash to the end of the authenticator
   //    data (authData from the decoded object).
-  const clientDataHash = createHash('sha256').update(Buffer.from(challenge, 'base64')).digest();
+  const clientDataHash = createHash('sha256').update(challenge).digest();
 
   const nonceData = Buffer.concat([decodedAttestation.authData, clientDataHash]);
 
@@ -170,7 +170,7 @@ function verifyAttestation(params) {
 
   return {
     keyId,
-    clientCertificate,
+    publicKey: clientCertificate.publicKey.export({ type: 'spki', format: 'pem' }),
     environment: aaguid === APPATTESTPROD ? 'production' : 'development',
   };
 }
