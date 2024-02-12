@@ -6,7 +6,18 @@ function verifyAssertion(params) {
     assertion,
     payload,
     publicKey,
+    bundleIdentifier,
+    teamIdentifier,
+    signCount,
   } = params;
+
+  if (!bundleIdentifier) {
+    throw new Error('bundleIdentifier is required');
+  }
+
+  if (!teamIdentifier) {
+    throw new Error('teamIdentifier is required');
+  }
 
   if (!assertion) {
     throw new Error('assertion is required');
@@ -45,10 +56,21 @@ function verifyAssertion(params) {
   }
 
   // 4. Compute the SHA256 hash of the client’s App ID, and verify that it matches the RP ID in the authenticator data.
+  const appIdHash = createHash('sha256').update(`${teamIdentifier}.${bundleIdentifier}`).digest('base64');
+  const rpiIdHash = authenticatorData.subarray(0, 32).toString('base64');
+
+  if (appIdHash !== rpiIdHash) {
+    throw new Error('appId does not match');
+  }
 
   // 5. Verify that the authenticator data’s counter value is greater than the value from the previous assertion, or greater than 0 on the first assertion.
+  const nextSignCount = authenticatorData.subarray(33, 37).readInt32BE();
+  if (nextSignCount <= signCount) {
+    throw new Error('invalid signCount');
+  }
 
   // 6. Verify that the embedded challenge in the client data matches the earlier challenge to the client.
+  // This step is not covered and needs to be done in the application using this library.
 }
 
 export default verifyAssertion;
