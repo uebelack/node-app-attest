@@ -280,7 +280,7 @@ The server verifies these assertions against the challenge and the stored public
 
 ## License
 
-MIT License. See `LICENSE.txt` for more information.
+MIT License. See `LICENSE` for more information.
 
 [build-shield]: https://img.shields.io/github/actions/workflow/status/uebelack/node-app-attest/ci.yml?branch=main&style=for-the-badge
 [build-url]: https://github.com/uebelack/node-app-attest/actions/workflows/ci.yml
@@ -289,4 +289,4 @@ MIT License. See `LICENSE.txt` for more information.
 [coverage-shield]: https://img.shields.io/coveralls/github/uebelack/node-app-attest.svg?style=for-the-badge
 [coverage-url]: https://coveralls.io/github/uebelack/node-app-attest
 [license-shield]: https://img.shields.io/github/license/uebelack/node-app-attest.svg?style=for-the-badge
-[license-url]: https://github.com/uebelack/node-app-attest/blob/master/LICENSE.txt
+[license-url]: https://github.com/uebelack/node-app-attest/blob/master/LICENSE
