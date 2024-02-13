@@ -71,6 +71,8 @@ function verifyAssertion(params) {
 
   // 6. Verify that the embedded challenge in the client data matches the earlier challenge to the client.
   // This step is not covered and needs to be done in the application using this library.
+
+  return { signCount: nextSignCount };
 }
 
 export default verifyAssertion;
