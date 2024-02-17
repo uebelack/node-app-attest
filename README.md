@@ -14,7 +14,7 @@
 </div>
 
 ## About
-The App Attest service, offers a method for confirming that connections to your server originate from authentic instances of your app. While generating assertions and attestations within your app is relatively straightforward, the process of verifying them on the server side is a bit of a challenge. This library provides two methods for verifying attestations and assertions on the server side for JavaScript based backends.
+The App Attest service, offers a method for confirming that connections to your server originate from authentic instances of your app. While generating assertions and attestations within your app is relatively straightforward, the process of verifying them on the server side is a bit of a challenge. This library provides two methods for verifying attestations and assertions on the server side for JavaScript or TypeScript based backends.
 
 See https://developer.apple.com/documentation/devicecheck/establishing_your_app_s_integrity for details.
 

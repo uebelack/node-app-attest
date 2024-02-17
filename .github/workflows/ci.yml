@@ -26,6 +26,8 @@ jobs:
         run: yarn install
       - name: Lint
         run: yarn lint
+      - name: Types
+        run: yarn types
       - name: Test
         run: yarn test --coverage
       - name: Coveralls

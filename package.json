@@ -1,12 +1,13 @@
 {
   "name": "node-app-attest",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A JavaScript implementation of the App Attest protocol, which checks whether clients connecting to your server are valid instances of your app.",
   "repository": "https://github.com/uebelack/node-app-attest",
   "author": "David Übelacker",
   "license": "MIT",
   "type": "module",
   "main": "src/index.js",
+  "types": "types/index.d.ts",
   "keywords": [
     "apple",
     "mobile",
@@ -19,6 +20,7 @@
   ],
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "types": "tsc",
     "lint": "eslint ."
   },
   "devDependencies": {
@@ -26,7 +28,8 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jest": "^27.6.3",
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "asn1js": "^3.0.5",
