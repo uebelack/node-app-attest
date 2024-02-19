@@ -171,6 +171,7 @@ function verifyAttestation(params) {
   return {
     keyId,
     publicKey: clientCertificate.publicKey.export({ type: 'spki', format: 'pem' }),
+    receipt: decodedAttestation.attStmt.receipt,
     environment: aaguid === APPATTESTPROD ? 'production' : 'development',
   };
 }
