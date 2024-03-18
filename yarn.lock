@@ -2872,9 +2872,9 @@ pkg-dir@^4.2.0:
     find-up "^4.0.0"
 
 pkijs@^3.0.15:
-  version "3.0.15"
-  resolved "https://registry.yarnpkg.com/pkijs/-/pkijs-3.0.15.tgz#d6a3f6e11ae8c8aa1ebd1daf4501e9ac49f61916"
-  integrity sha512-n7nAl9JpqdeQsjy+rPmswkmZ3oO/Fu5uN9me45PPQVdWjd0X7HKfL8+HYwfxihqoDSSPUIajkOcqFxEUxMqhwQ==
+  version "3.0.16"
+  resolved "https://registry.yarnpkg.com/pkijs/-/pkijs-3.0.16.tgz#f406161822ebccb944a75f7d232e5ccb8a9e1311"
+  integrity sha512-iDUm90wfgtfd1PDV1oEnQj/4jBIU9hCSJeV0kQKThwDpbseFxC4TdpoMYlwE9maol5u0wMGZX9cNG2h1/0Lhww==
   dependencies:
     asn1js "^3.0.5"
     bytestreamjs "^2.0.0"
