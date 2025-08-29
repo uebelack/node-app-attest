@@ -2841,9 +2841,9 @@ pkg-dir@^4.2.0:
     find-up "^4.0.0"
 
 pkijs@^3.0.15:
-  version "3.2.4"
-  resolved "https://registry.yarnpkg.com/pkijs/-/pkijs-3.2.4.tgz#55ed72b363a20fbd42b139ee3b72e54483635171"
-  integrity sha512-Et9V5QpvBilPFgagJcaKBqXjKrrgF5JL2mSDELk1vvbOTt4fuBhSSsGn9Tcz0TQTfS5GCpXQ31Whrpqeqp0VRg==
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/pkijs/-/pkijs-3.2.5.tgz#dd6ce1c3b92b0467defc4b5a601d30ac1c1120a8"
+  integrity sha512-WX0la7n7CbnguuaIQoT4Fc0IJckPDOUldzOwlZ0nwpOcySS+Six/tXBdc0RX17J5o1To0SAr3xDJjDLsOfDFQA==
   dependencies:
     "@noble/hashes" "^1.4.0"
     asn1js "^3.0.5"
