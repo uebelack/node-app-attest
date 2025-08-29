@@ -1,6 +1,6 @@
 {
   "name": "node-app-attest",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A JavaScript implementation of the App Attest protocol, which checks whether clients connecting to your server are valid instances of your app.",
   "repository": "https://github.com/uebelack/node-app-attest",
   "author": "David Übelacker",
