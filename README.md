@@ -14,6 +14,7 @@
 </div>
 
 ## About
+
 The App Attest service, offers a method for confirming that connections to your server originate from authentic instances of your app. While generating assertions and attestations within your app is relatively straightforward, the process of verifying them on the server side is a bit of a challenge. This library provides two methods for verifying attestations and assertions on the server side for JavaScript or TypeScript based backends.
 
 See https://developer.apple.com/documentation/devicecheck/establishing_your_app_s_integrity for details.
@@ -25,6 +26,7 @@ yarn add node-app-attest / node install node-app-attest
 ```
 
 ## Usage
+
 This library provides two methods, one to verify an attestation and another to verify the attestations:
 
 ```javascript
@@ -50,13 +52,12 @@ const { signCount } = verifyAssertion({
 
 ```
 
-
 ## Detailed Usage
 
 The full example containing code for the app and for the backend you can find in this repository: https://github.com/uebelack/node-app-attest-example
 
-
 APP
+
 ```swift
  func attestChallenge() async throws -> String {
     let (data, _) = try await URLSession.shared.data(from: url("/attest/challenge"))
@@ -66,6 +67,7 @@ APP
 ```
 
 SERVER
+
 ```javascript
 import express from 'express';
 import { v4 as uuid } from 'uuid';
@@ -81,6 +83,7 @@ app.get('/attest/challenge', (req, res) => {
 The app requests a challenge from the server, such as a randomly generated string, which the server stores in its database.
 
 APP
+
 ```swift
 import CryptoKit
 import DeviceCheck
@@ -126,6 +129,7 @@ func attestKey() async throws -> String {
 Using the DCAppAttestService, the app generates a keyId. With the challenge and keyId, the app requests the DCAppAttestService to generate an attestation. In the background, the DCAppAttestService creates a public/private key pair on the device. The app transmits this attestation, which includes the new public key, to the server.
 
 SERVER
+
 ```javascript
 import { verifyAttestation, verifyAssertion } from 'node-app-attest';
 app.post(`${API_PREFIX}/attest/verify`, (req, res) => {
@@ -161,6 +165,7 @@ app.post(`${API_PREFIX}/attest/verify`, (req, res) => {
 Upon receiving the attestation, the server conducts nine validation checks (refer to https://developer.apple.com/documentation/devicecheck/validating_apps_that_connect_to_your_server) and stores the new public key securely.
 
 APP
+
 ```swift
 func createAssertion(_ payload: Data) async throws -> String {
     var keyId = UserDefaults.standard.string(forKey: "AttestKeyId")
@@ -269,14 +274,11 @@ app.post(`${API_PREFIX}/send-message`, (req, res) => {
 
 The server verifies these assertions against the challenge and the stored public key to ensure the integrity and authenticity of the requests.
 
-
-
 ## Other implementations
 
-* Swift: https://github.com/iansampson/AppAttest
-* Kotlin/Java: https://github.com/veehaitch/devicecheck-appattest
-* Node: https://github.com/srinivas1729/appattest-checker-node
-
+- Swift: https://github.com/iansampson/AppAttest
+- Kotlin/Java: https://github.com/veehaitch/devicecheck-appattest
+- Node: https://github.com/srinivas1729/appattest-checker-node
 
 ## License
 

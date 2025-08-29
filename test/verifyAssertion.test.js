@@ -1,9 +1,11 @@
 import verifyAssertion from '../src/verifyAssertion.js';
 
-// eslint-disable-next-line max-len
-const ASSERTION = Buffer.from('omlzaWduYXR1cmVYRzBFAiBB8BGAwkmFCg1M5J0mOYEun0SUN1/lse79/7ypG9WiMQIhAIHvqj7eg59B1PMFX1CN4GMGlsgfFtdL30pHCf7G/dNRcWF1dGhlbnRpY2F0b3JEYXRhWCXKPdw7T3iujcFZbHVrHX0mDSMrNms5PzEbrFbQPRA6rEAAAAAB', 'base64');
-// eslint-disable-next-line max-len
-const PUBLIC_KEY = '-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg69t2YzgcPTLUx8Zgu+rbcikeaEL\n8Ppb+HG0QTIulz8YUB9tgv1pDRruWk87nZC3our56pzIWaqXEbaWyamdzA==\n-----END PUBLIC KEY-----\n';
+const ASSERTION = Buffer.from(
+  'omlzaWduYXR1cmVYRzBFAiBB8BGAwkmFCg1M5J0mOYEun0SUN1/lse79/7ypG9WiMQIhAIHvqj7eg59B1PMFX1CN4GMGlsgfFtdL30pHCf7G/dNRcWF1dGhlbnRpY2F0b3JEYXRhWCXKPdw7T3iujcFZbHVrHX0mDSMrNms5PzEbrFbQPRA6rEAAAAAB',
+  'base64',
+);
+const PUBLIC_KEY =
+  '-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg69t2YzgcPTLUx8Zgu+rbcikeaEL\n8Ppb+HG0QTIulz8YUB9tgv1pDRruWk87nZC3our56pzIWaqXEbaWyamdzA==\n-----END PUBLIC KEY-----\n';
 const BUNDLE_IDENTIFIER = 'io.uebelacker.AppAttestExample';
 const TEAM_IDENTIFIER = 'V8H6LQ9448';
 
@@ -58,7 +60,7 @@ describe('verifyAssertion', () => {
       verifyAssertion({
         assertion: Buffer.from('invalid-assertion'),
         payload: '{"subject":"Lorem ipsum","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}',
-        // eslint-disable-next-line max-len
+
         publicKey: PUBLIC_KEY,
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,

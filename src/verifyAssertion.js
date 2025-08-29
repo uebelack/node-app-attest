@@ -2,14 +2,7 @@ import cbor from 'cbor';
 import { createHash, createVerify } from 'crypto';
 
 function verifyAssertion(params) {
-  const {
-    assertion,
-    payload,
-    publicKey,
-    bundleIdentifier,
-    teamIdentifier,
-    signCount,
-  } = params;
+  const { assertion, payload, publicKey, bundleIdentifier, teamIdentifier, signCount } = params;
 
   if (!bundleIdentifier) {
     throw new Error('bundleIdentifier is required');
@@ -36,7 +29,7 @@ function verifyAssertion(params) {
   try {
     // eslint-disable-next-line prefer-destructuring
     decodedAssertion = cbor.decodeAllSync(assertion)[0];
-  } catch (e) {
+  } catch {
     throw new Error('invalid assertion');
   }
 
@@ -46,7 +39,9 @@ function verifyAssertion(params) {
   const clientDataHash = createHash('sha256').update(payload).digest();
 
   // 2. Concatenate authenticatorData and clientDataHash, and apply a SHA256 hash over the result to form nonce.
-  const nonce = createHash('sha256').update(Buffer.concat([authenticatorData, clientDataHash])).digest();
+  const nonce = createHash('sha256')
+    .update(Buffer.concat([authenticatorData, clientDataHash]))
+    .digest();
 
   // 3. Use the public key that you store from the attestation object to verify that the assertion’s signature is valid for nonce.
   const verifier = createVerify('SHA256');

@@ -3,21 +3,15 @@ import { createHash, X509Certificate } from 'crypto';
 import * as asn1js from 'asn1js';
 import * as pkijs from 'pkijs';
 
-// eslint-disable-next-line max-len
-const APPLE_APP_ATTESTATION_ROOT_CA = new X509Certificate('-----BEGIN CERTIFICATE-----\nMIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijVoyFraWVIyd/dganmrduC1bmTBGwD\n-----END CERTIFICATE-----');
+const APPLE_APP_ATTESTATION_ROOT_CA = new X509Certificate(
+  '-----BEGIN CERTIFICATE-----\nMIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijVoyFraWVIyd/dganmrduC1bmTBGwD\n-----END CERTIFICATE-----',
+);
 
 const APPATTESTDEVELOP = Buffer.from('appattestdevelop').toString('hex');
 const APPATTESTPROD = Buffer.concat([Buffer.from('appattest'), Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])]).toString('hex');
 
 function verifyAttestation(params) {
-  const {
-    attestation,
-    challenge,
-    keyId,
-    bundleIdentifier,
-    teamIdentifier,
-    allowDevelopmentEnvironment,
-  } = params;
+  const { attestation, challenge, keyId, bundleIdentifier, teamIdentifier, allowDevelopmentEnvironment } = params;
 
   if (!bundleIdentifier) {
     throw new Error('bundleIdentifier is required');
@@ -43,7 +37,7 @@ function verifyAttestation(params) {
 
   try {
     decodedAttestations = cbor.decodeAllSync(attestation);
-  } catch (e) {
+  } catch {
     throw new Error('invalid attestation');
   }
 
@@ -53,14 +47,15 @@ function verifyAttestation(params) {
 
   const decodedAttestation = decodedAttestations[0];
 
-  if (decodedAttestation.fmt !== 'apple-appattest'
-       || decodedAttestation.attStmt?.x5c?.length !== 2
-       || !decodedAttestation.attStmt?.receipt
-       || !decodedAttestation.authData
-       || !Buffer.isBuffer(decodedAttestation.attStmt.x5c[0])
-       || !Buffer.isBuffer(decodedAttestation.attStmt.x5c[1])
-       || !Buffer.isBuffer(decodedAttestation.attStmt.receipt)
-       || !Buffer.isBuffer(decodedAttestation.authData)
+  if (
+    decodedAttestation.fmt !== 'apple-appattest' ||
+    decodedAttestation.attStmt?.x5c?.length !== 2 ||
+    !decodedAttestation.attStmt?.receipt ||
+    !decodedAttestation.authData ||
+    !Buffer.isBuffer(decodedAttestation.attStmt.x5c[0]) ||
+    !Buffer.isBuffer(decodedAttestation.attStmt.x5c[1]) ||
+    !Buffer.isBuffer(decodedAttestation.attStmt.receipt) ||
+    !Buffer.isBuffer(decodedAttestation.authData)
   ) {
     throw new Error('invalid attestation');
   }
@@ -74,7 +69,7 @@ function verifyAttestation(params) {
   let certificates;
   try {
     certificates = attStmt.x5c.map((data) => new X509Certificate(data));
-  } catch (e) {
+  } catch {
     throw new Error('invalid certificate');
   }
 
@@ -170,7 +165,10 @@ function verifyAttestation(params) {
 
   return {
     keyId,
-    publicKey: clientCertificate.publicKey.export({ type: 'spki', format: 'pem' }),
+    publicKey: clientCertificate.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    }),
     receipt: decodedAttestation.attStmt.receipt,
     environment: aaguid === APPATTESTPROD ? 'production' : 'development',
   };
