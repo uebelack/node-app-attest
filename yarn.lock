@@ -1637,11 +1637,11 @@ __metadata:
   linkType: hard
 
 "cbor@npm:^10.0.11":
-  version: 10.0.11
-  resolution: "cbor@npm:10.0.11"
+  version: 10.0.12
+  resolution: "cbor@npm:10.0.12"
   dependencies:
     nofilter: "npm:^3.0.2"
-  checksum: 10c0/0cb6fb3d5e98c7af4443200ff107049f6132b5649b8a0e586940ca811e5ab5622bf3d0a36f154f43107acfd9685cc462e6eac77876ef4c060bcec96c71b90d8a
+  checksum: 10c0/4c197d783415cade31565725a5e6b2b967d856285eacdb0b5f5ec0687d93c12f2ee9c6cc05aa7be02e8bbf0fe3ba40d22be69b56bd2ab1be2cc0a59370f14246
   languageName: node
   linkType: hard
 
