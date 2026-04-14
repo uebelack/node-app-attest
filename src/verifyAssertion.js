@@ -1,5 +1,5 @@
 import cbor from "cbor";
-import { createHash, createVerify } from "crypto";
+import { createHash, createVerify } from "node:crypto";
 
 function verifyAssertion(params) {
   const {

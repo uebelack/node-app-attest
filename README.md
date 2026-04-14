@@ -9,7 +9,8 @@
 <div align="center">
   <h1 align="center">node-app-attest</h1>
   <p align="center">
-    JavaScript implementation of the App Attest protocol for node.js
+    JavaScript implementation of the App Attest protocol for node.js. This is fork that replaces "crypto" with "node:crypto" as this is
+    the right import source for Node.js cloudflare worker.
   </p>
 </div>
 
@@ -21,6 +22,12 @@ See https://developer.apple.com/documentation/devicecheck/establishing_your_app_
 
 ## Installation
 
+For installing this fork:
+```bash
+yarn add github:denissdubinin/node-app-attest-cf-worker / node install github:denissdubinin/node-app-attest-cf-worker
+```
+
+For installing original package:
 ```bash
 yarn add node-app-attest / node install node-app-attest
 ```
