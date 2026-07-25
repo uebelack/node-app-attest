@@ -251,6 +251,40 @@ describe("verifyAttestation", () => {
     );
   });
 
+  it("should reject a certificate with an unsupported signature algorithm", () => {
+    // Rewrite the OUTER signatureAlgorithm (the last ecdsa-with-SHA256 OID in
+    // the DER; the first is inside tbsCertificate) to an unassigned OID. The
+    // signed bytes are untouched — only the declared algorithm becomes one we
+    // cannot verify, which must fail closed rather than be silently accepted.
+    const ECDSA_WITH_SHA256_OID = Buffer.from([
+      0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02,
+    ]);
+    const certificate = Buffer.from(CLIENT_CERTIFICATE);
+    const offset = certificate.lastIndexOf(ECDSA_WITH_SHA256_OID);
+    expect(offset).toBeGreaterThan(-1);
+    certificate[offset + ECDSA_WITH_SHA256_OID.length - 1] = 0x09;
+
+    expect(() => {
+      verifyAttestation({
+        bundleIdentifier: BUNDLE_IDENTIFIER,
+        teamIdentifier: TEAM_IDENTIFIER,
+        allowDevelopmentEnvironment: true,
+        attestation: cbor.encode({
+          fmt: "apple-appattest",
+          attStmt: {
+            x5c: [certificate, SUB_CA],
+            receipt: Buffer.from("test"),
+          },
+          authData: Buffer.from("test"),
+        }),
+        challenge: CHALLENGE,
+        keyId: KEY_ID,
+      });
+    }).toThrow(
+      "client CA certificate is not signed by Apple App Attestation CA 1",
+    );
+  });
+
   it("should verify challenge", async () => {
     expect(() => {
       verifyAttestation({
