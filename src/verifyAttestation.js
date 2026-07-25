@@ -1,5 +1,5 @@
 import cbor from "cbor";
-import { createHash, X509Certificate } from "crypto";
+import { createHash, verify as cryptoVerify, X509Certificate } from "crypto";
 import * as asn1js from "asn1js";
 import * as pkijs from "pkijs";
 
@@ -12,6 +12,49 @@ const APPATTESTPROD = Buffer.concat([
   Buffer.from("appattest"),
   Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
 ]).toString("hex");
+
+// Signature-algorithm OID -> digest, used to verify a certificate's signature
+// with the hash the certificate itself declares.
+const SIGNATURE_ALGORITHM_DIGESTS = {
+  "1.2.840.10045.4.3.2": "sha256", // ecdsa-with-SHA256
+  "1.2.840.10045.4.3.3": "sha384", // ecdsa-with-SHA384
+  "1.2.840.10045.4.3.4": "sha512", // ecdsa-with-SHA512
+  "1.2.840.113549.1.1.11": "sha256", // sha256WithRSAEncryption
+  "1.2.840.113549.1.1.12": "sha384", // sha384WithRSAEncryption
+  "1.2.840.113549.1.1.13": "sha512", // sha512WithRSAEncryption
+};
+
+/**
+ * Verify that `certificate` was signed by `issuerPublicKey`.
+ *
+ * This replaces `X509Certificate.prototype.verify()`, which is unreliable on
+ * non-Node runtimes for CROSS-CURVE ECDSA chains: Apple's App Attest chain has
+ * a P-256 leaf signed ecdsa-with-SHA256 by a P-384 sub-CA, and Deno's
+ * node:crypto compatibility layer returns false for it (Node returns true for
+ * the same bytes), apparently deriving the digest from the issuer key's curve
+ * instead of from the certificate's declared signatureAlgorithm. Since every
+ * App Attest chain contains that link, verification failed 100% of the time on
+ * those runtimes. See https://github.com/denoland/deno/issues/36309
+ *
+ * Taking the digest explicitly from the certificate's own signatureAlgorithm
+ * is correct on every runtime, and keeps this function synchronous.
+ */
+function isSignedBy(certificate, issuerPublicKey) {
+  const parsed = pkijs.Certificate.fromBER(certificate.raw);
+  const digest =
+    SIGNATURE_ALGORITHM_DIGESTS[parsed.signatureAlgorithm.algorithmId];
+
+  if (!digest) {
+    return false;
+  }
+
+  return cryptoVerify(
+    digest,
+    Buffer.from(parsed.tbsView),
+    issuerPublicKey,
+    Buffer.from(parsed.signatureValue.valueBlock.valueHex),
+  );
+}
 
 function verifyAttestation(params) {
   const {
@@ -92,7 +135,7 @@ function verifyAttestation(params) {
     throw new Error("no sub CA certificate found");
   }
 
-  if (!subCaCertificate.verify(APPLE_APP_ATTESTATION_ROOT_CA.publicKey)) {
+  if (!isSignedBy(subCaCertificate, APPLE_APP_ATTESTATION_ROOT_CA.publicKey)) {
     throw new Error(
       "sub CA certificate is not signed by Apple App Attestation Root CA",
     );
@@ -107,7 +150,7 @@ function verifyAttestation(params) {
     throw new Error("no client CA certificate found");
   }
 
-  if (!clientCertificate.verify(subCaCertificate.publicKey)) {
+  if (!isSignedBy(clientCertificate, subCaCertificate.publicKey)) {
     throw new Error(
       "client CA certificate is not signed by Apple App Attestation CA 1",
     );
