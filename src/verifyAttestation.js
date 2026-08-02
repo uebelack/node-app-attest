@@ -58,6 +58,19 @@ function isSignedBy(certificate, issuerPublicKey) {
 }
 
 /**
+ * @typedef {object} AuthenticatorExtensionsPolicy
+ * @property {number[]} [allowedValidationCategories] Apple validation categories accepted by the server.
+ * @property {string[]} [allowedBundleVersions] Bundle versions accepted by the server.
+ * @property {boolean} [required] Require both supported Apple authenticator extensions.
+ */
+
+/**
+ * @typedef {object} AuthenticatorExtensionsResult
+ * @property {number} [validationCategory] The verified Apple validation category.
+ * @property {string} [bundleVersion] The verified app bundle version.
+ */
+
+/**
  * @typedef {object} VerifyAttestationParams
  * @property {Uint8Array} attestation The attestation object created by DCAppAttestService.attestKey.
  * @property {string | Uint8Array} challenge The one-time challenge the server sent to the app.
@@ -66,6 +79,8 @@ function isSignedBy(certificate, issuerPublicKey) {
  * @property {string} teamIdentifier The Apple developer team identifier, e.g. V8H6LQ9448.
  * @property {boolean} [allowDevelopmentEnvironment] Accept attestations from the development environment.
  *   Should only be true on test environments.
+ * @property {AuthenticatorExtensionsPolicy} [authenticatorExtensions] Validate Apple's authenticator extensions.
+ *   When omitted, attestations without extensions verify as before.
  */
 
 /**
@@ -74,7 +89,128 @@ function isSignedBy(certificate, issuerPublicKey) {
  * @property {string} publicKey The public key of the attested key pair as PEM (SPKI). Store it to verify assertions.
  * @property {Buffer} receipt The App Attest receipt, e.g. for fraud risk assessment.
  * @property {"production" | "development"} environment The environment the attestation was created in.
+ * @property {number} [validationCategory] The verified apple_validation_category_01, if present.
+ * @property {string} [bundleVersion] The verified apple_bundle_version_01, if present.
  */
+
+/**
+ * @param {any} policy
+ */
+function validateAuthenticatorExtensionsPolicy(policy) {
+  const categories = policy?.allowedValidationCategories;
+  const versions = policy?.allowedBundleVersions;
+  const valid =
+    policy !== null &&
+    typeof policy === "object" &&
+    !Array.isArray(policy) &&
+    (policy.required === undefined || typeof policy.required === "boolean") &&
+    (categories === undefined ||
+      (Array.isArray(categories) &&
+        categories.every(
+          (/** @type {any} */ category) =>
+            Number.isInteger(category) && category >= 0 && category <= 0xffffffff,
+        ))) &&
+    (versions === undefined ||
+      (Array.isArray(versions) &&
+        versions.every(
+          (/** @type {unknown} */ version) => typeof version === "string" && version.length > 0,
+        )));
+
+  if (!valid) {
+    throw new Error("invalid authenticator extensions policy");
+  }
+}
+
+/**
+ * @param {Uint8Array} authData
+ * @param {AuthenticatorExtensionsPolicy} [authenticatorExtensions]
+ * @returns {AuthenticatorExtensionsResult}
+ */
+export function parseAuthenticatorExtensions(authData, authenticatorExtensions = {}) {
+  validateAuthenticatorExtensionsPolicy(authenticatorExtensions);
+  if (!(authData instanceof Uint8Array) || authData.length < 55) {
+    throw new Error("invalid authenticator data");
+  }
+
+  const data = Buffer.from(authData);
+  const credentialIdLength = data.readUInt16BE(53);
+  const credentialDataOffset = 55 + credentialIdLength;
+  if (credentialDataOffset > data.length) {
+    throw new Error("invalid authenticator data");
+  }
+
+  /** @type {any[]} untrusted CBOR, its structure is validated below */
+  let decodedCredentialData;
+  try {
+    decodedCredentialData = [...decodeSequence(data.subarray(credentialDataOffset))];
+  } catch {
+    throw new Error("invalid authenticator data");
+  }
+
+  if (decodedCredentialData.length < 2) {
+    if (authenticatorExtensions.required) {
+      throw new Error("authenticator extensions are required");
+    }
+    return {};
+  }
+
+  if (decodedCredentialData.length !== 2) {
+    throw new Error("invalid authenticator extensions");
+  }
+
+  const extensions = decodedCredentialData[1];
+  const isPlainObject =
+    extensions !== null &&
+    typeof extensions === "object" &&
+    !Array.isArray(extensions) &&
+    !(extensions instanceof Uint8Array) &&
+    (Object.getPrototypeOf(extensions) === Object.prototype ||
+      Object.getPrototypeOf(extensions) === null);
+  if (!(extensions instanceof Map) && !isPlainObject) {
+    throw new Error("invalid authenticator extensions");
+  }
+  const getExtension = (/** @type {string} */ name) =>
+    extensions instanceof Map ? extensions.get(name) : extensions?.[name];
+  const validationCategory = getExtension("apple_validation_category_01");
+  const bundleVersion = getExtension("apple_bundle_version_01");
+  /** @type {AuthenticatorExtensionsResult} */
+  const result = {};
+
+  if (validationCategory !== undefined) {
+    if (!(validationCategory instanceof Uint8Array) || validationCategory.length !== 4) {
+      throw new Error("invalid apple_validation_category_01 extension");
+    }
+    result.validationCategory = Buffer.from(validationCategory).readUInt32LE();
+    if (
+      authenticatorExtensions.allowedValidationCategories &&
+      !authenticatorExtensions.allowedValidationCategories.includes(result.validationCategory)
+    ) {
+      throw new Error("validation category is not allowed");
+    }
+  }
+
+  if (bundleVersion !== undefined) {
+    if (typeof bundleVersion !== "string" || bundleVersion.length === 0) {
+      throw new Error("invalid apple_bundle_version_01 extension");
+    }
+    result.bundleVersion = bundleVersion;
+    if (
+      authenticatorExtensions.allowedBundleVersions &&
+      !authenticatorExtensions.allowedBundleVersions.includes(result.bundleVersion)
+    ) {
+      throw new Error("bundle version is not allowed");
+    }
+  }
+
+  if (
+    authenticatorExtensions.required &&
+    (result.validationCategory === undefined || result.bundleVersion === undefined)
+  ) {
+    throw new Error("authenticator extensions are required");
+  }
+
+  return result;
+}
 
 /**
  * Verifies an App Attest attestation.
@@ -91,6 +227,7 @@ function verifyAttestation(params) {
     bundleIdentifier,
     teamIdentifier,
     allowDevelopmentEnvironment,
+    authenticatorExtensions,
   } = params;
 
   if (!bundleIdentifier) {
@@ -257,6 +394,8 @@ function verifyAttestation(params) {
     throw new Error("credentialId does not match");
   }
 
+  const verifiedExtensions = parseAuthenticatorExtensions(authData, authenticatorExtensions);
+
   return {
     keyId,
     publicKey: /** @type {string} */ (
@@ -267,6 +406,7 @@ function verifyAttestation(params) {
     ),
     receipt,
     environment: aaguid === APPATTESTPROD ? "production" : "development",
+    ...verifiedExtensions,
   };
 }
 

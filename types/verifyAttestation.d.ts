@@ -1,3 +1,27 @@
+export type AuthenticatorExtensionsPolicy = {
+    /**
+     * Apple validation categories accepted by the server.
+     */
+    allowedValidationCategories?: number[];
+    /**
+     * Bundle versions accepted by the server.
+     */
+    allowedBundleVersions?: string[];
+    /**
+     * Require both supported Apple authenticator extensions.
+     */
+    required?: boolean;
+};
+export type AuthenticatorExtensionsResult = {
+    /**
+     * The verified Apple validation category.
+     */
+    validationCategory?: number;
+    /**
+     * The verified app bundle version.
+     */
+    bundleVersion?: string;
+};
 export type VerifyAttestationParams = {
     /**
      * The attestation object created by DCAppAttestService.attestKey.
@@ -24,6 +48,11 @@ export type VerifyAttestationParams = {
      * Should only be true on test environments.
      */
     allowDevelopmentEnvironment?: boolean;
+    /**
+     * Validate Apple's authenticator extensions.
+     * When omitted, attestations without extensions verify as before.
+     */
+    authenticatorExtensions?: AuthenticatorExtensionsPolicy;
 };
 export type VerifyAttestationResult = {
     /**
@@ -42,24 +71,21 @@ export type VerifyAttestationResult = {
      * The environment the attestation was created in.
      */
     environment: "production" | "development";
+    /**
+     * The verified apple_validation_category_01, if present.
+     */
+    validationCategory?: number;
+    /**
+     * The verified apple_bundle_version_01, if present.
+     */
+    bundleVersion?: string;
 };
 /**
- * @typedef {object} VerifyAttestationParams
- * @property {Uint8Array} attestation The attestation object created by DCAppAttestService.attestKey.
- * @property {string | Uint8Array} challenge The one-time challenge the server sent to the app.
- * @property {string} keyId The base64 key identifier created by DCAppAttestService.generateKey.
- * @property {string} bundleIdentifier The app's bundle identifier, e.g. org.example.AppAttestExample.
- * @property {string} teamIdentifier The Apple developer team identifier, e.g. V8H6LQ9448.
- * @property {boolean} [allowDevelopmentEnvironment] Accept attestations from the development environment.
- *   Should only be true on test environments.
+ * @param {Uint8Array} authData
+ * @param {AuthenticatorExtensionsPolicy} [authenticatorExtensions]
+ * @returns {AuthenticatorExtensionsResult}
  */
-/**
- * @typedef {object} VerifyAttestationResult
- * @property {string} keyId The verified key identifier.
- * @property {string} publicKey The public key of the attested key pair as PEM (SPKI). Store it to verify assertions.
- * @property {Buffer} receipt The App Attest receipt, e.g. for fraud risk assessment.
- * @property {"production" | "development"} environment The environment the attestation was created in.
- */
+export declare function parseAuthenticatorExtensions(authData: Uint8Array, authenticatorExtensions?: AuthenticatorExtensionsPolicy): AuthenticatorExtensionsResult;
 /**
  * Verifies an App Attest attestation.
  *
