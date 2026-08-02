@@ -39,6 +39,11 @@ const { keyId, publicKey } = verifyAttestation({
   bundleIdentifier: String (e.g. org.example.AppAttestExample),
   teamIdentifier: String (e.g. V8H6LQ9448),
   allowDevelopmentEnvironment: boolean (should only be true on test environments),
+  authenticatorExtensions: { // optional; omitted for backward-compatible behavior
+    allowedValidationCategories: Number[],
+    allowedBundleVersions: String[],
+    required: boolean,
+  },
 });
 
 const { signCount } = verifyAssertion({
@@ -51,6 +56,33 @@ const { signCount } = verifyAssertion({
 });
 
 ```
+
+### Authenticator extensions
+
+Apple can append `apple_validation_category_01` and
+`apple_bundle_version_01` to attestation authenticator data. To validate and
+require both extensions, configure an allowlist:
+
+```javascript
+const result = verifyAttestation({
+  // ...the required attestation parameters
+  authenticatorExtensions: {
+    allowedValidationCategories: [2, 4], // TestFlight and App Store
+    allowedBundleVersions: ["42"],
+    required: true,
+  },
+});
+
+console.log(result.validationCategory, result.bundleVersion);
+```
+
+When `authenticatorExtensions` is omitted, attestations without these
+extensions continue to verify as before. Extensions that are present are still
+type-checked. An allowlist rejects a present value outside the list, and
+`required: true` rejects attestations unless both supported extensions are
+present. See Apple's [attestation object validation
+guide](https://developer.apple.com/documentation/devicecheck/attestation-object-validation-guide)
+for the extension definitions and validation-category values.
 
 ## Detailed Usage
 

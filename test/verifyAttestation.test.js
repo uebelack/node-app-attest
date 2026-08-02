@@ -1,6 +1,9 @@
 import cbor from "cbor";
-import verifyAttestation from "../src/verifyAttestation.js";
+import verifyAttestation, {
+  parseAuthenticatorExtensions,
+} from "../src/verifyAttestation.js";
 import attestationDevelopment from "./fixtures/attestation-development.json";
+import attestationExtensions from "./fixtures/attestation-extensions.json";
 import attestationProduction from "./fixtures/attestation-production.json";
 
 const ATTESTATION = Buffer.from(attestationDevelopment.attestation, "base64");
@@ -23,7 +26,219 @@ const SUB_CA_INVALID = Buffer.from(
 const BUNDLE_IDENTIFIER = "io.uebelacker.AppAttestExample";
 const TEAM_IDENTIFIER = "V8H6LQ9448";
 
+function authenticatorDataWithExtensions(extensions) {
+  return authenticatorDataWithCredentialData(
+    cbor.encode(new Map([[1, 2]])),
+    cbor.encode(extensions),
+  );
+}
+
+function authenticatorDataWithCredentialData(...credentialData) {
+  const authenticatorHeader = Buffer.alloc(55);
+  authenticatorHeader.writeUInt16BE(0, 53);
+  return Buffer.concat([authenticatorHeader, ...credentialData]);
+}
+
 describe("verifyAttestation", () => {
+  it("parses Apple's validation category and bundle version", () => {
+    const decoded = cbor.decodeAllSync(
+      Buffer.from(attestationExtensions.attestation, "base64"),
+    )[0];
+
+    expect(
+      parseAuthenticatorExtensions(decoded.authData, {
+        allowedValidationCategories: [1],
+        allowedBundleVersions: ["1"],
+        required: true,
+      }),
+    ).toEqual({ validationCategory: 1, bundleVersion: "1" });
+  });
+
+  it("rejects a validation category outside the allowed policy", () => {
+    const decoded = cbor.decodeAllSync(
+      Buffer.from(attestationExtensions.attestation, "base64"),
+    )[0];
+
+    expect(() =>
+      parseAuthenticatorExtensions(decoded.authData, {
+        allowedValidationCategories: [2, 3, 4],
+      }),
+    ).toThrow("validation category is not allowed");
+  });
+
+  it("rejects a bundle version outside the allowed policy", () => {
+    const decoded = cbor.decodeAllSync(
+      Buffer.from(attestationExtensions.attestation, "base64"),
+    )[0];
+
+    expect(() =>
+      parseAuthenticatorExtensions(decoded.authData, {
+        allowedBundleVersions: ["2"],
+      }),
+    ).toThrow("bundle version is not allowed");
+  });
+
+  it("requires both Apple extensions in strict mode", () => {
+    expect(() =>
+      parseAuthenticatorExtensions(DECODED_ATTESTATION.authData, {
+        required: true,
+      }),
+    ).toThrow("authenticator extensions are required");
+  });
+
+  it("rejects each incomplete Apple extension set in strict mode", () => {
+    const categoryOnly = authenticatorDataWithExtensions({
+      apple_validation_category_01: Buffer.from([1, 0, 0, 0]),
+    });
+    const versionOnly = authenticatorDataWithExtensions({
+      apple_bundle_version_01: "1",
+    });
+
+    expect(() =>
+      parseAuthenticatorExtensions(categoryOnly, { required: true }),
+    ).toThrow("authenticator extensions are required");
+    expect(() =>
+      parseAuthenticatorExtensions(versionOnly, { required: true }),
+    ).toThrow("authenticator extensions are required");
+  });
+
+  it("returns whichever Apple extension is present outside strict mode", () => {
+    const categoryOnly = authenticatorDataWithExtensions({
+      apple_validation_category_01: Buffer.from([1, 0, 0, 0]),
+    });
+    const versionOnly = authenticatorDataWithExtensions({
+      apple_bundle_version_01: "1",
+    });
+
+    expect(parseAuthenticatorExtensions(categoryOnly)).toEqual({
+      validationCategory: 1,
+    });
+    expect(parseAuthenticatorExtensions(versionOnly)).toEqual({
+      bundleVersion: "1",
+    });
+  });
+
+  it("accepts a decoded CBOR Map and ignores unrelated extensions", () => {
+    const extensions = new Map([
+      [1, "keeps cbor decoding as a Map"],
+      ["apple_validation_category_01", Buffer.from([1, 0, 0, 0])],
+      ["apple_bundle_version_01", "1"],
+    ]);
+
+    expect(
+      parseAuthenticatorExtensions(authenticatorDataWithExtensions(extensions)),
+    ).toEqual({ validationCategory: 1, bundleVersion: "1" });
+    expect(
+      parseAuthenticatorExtensions(
+        authenticatorDataWithExtensions({ unrelated_extension: true }),
+      ),
+    ).toEqual({});
+  });
+
+  it("rejects a validation category that is not a four-byte value", () => {
+    const authData = authenticatorDataWithExtensions({
+      apple_validation_category_01: 1,
+      apple_bundle_version_01: "1",
+    });
+
+    expect(() => parseAuthenticatorExtensions(authData)).toThrow(
+      "invalid apple_validation_category_01 extension",
+    );
+  });
+
+  it("rejects an empty bundle version", () => {
+    const authData = authenticatorDataWithExtensions({
+      apple_validation_category_01: Buffer.from([1, 0, 0, 0]),
+      apple_bundle_version_01: "",
+    });
+
+    expect(() => parseAuthenticatorExtensions(authData)).toThrow(
+      "invalid apple_bundle_version_01 extension",
+    );
+  });
+
+  it("rejects malformed authenticator extension policy", () => {
+    const decoded = cbor.decodeAllSync(
+      Buffer.from(attestationExtensions.attestation, "base64"),
+    )[0];
+
+    expect(() =>
+      parseAuthenticatorExtensions(decoded.authData, {
+        allowedValidationCategories: "1",
+      }),
+    ).toThrow("invalid authenticator extensions policy");
+  });
+
+  it.each([
+    null,
+    [],
+    { required: "yes" },
+    { allowedValidationCategories: [-1] },
+    { allowedValidationCategories: [0x100000000] },
+    { allowedValidationCategories: [1.5] },
+    { allowedBundleVersions: "1" },
+    { allowedBundleVersions: [1] },
+  ])("rejects invalid authenticator extension policy %#", (policy) => {
+    expect(() =>
+      parseAuthenticatorExtensions(DECODED_ATTESTATION.authData, policy),
+    ).toThrow("invalid authenticator extensions policy");
+  });
+
+  it("rejects malformed authenticator data", () => {
+    expect(() => parseAuthenticatorExtensions("not a buffer")).toThrow(
+      "invalid authenticator data",
+    );
+    expect(() => parseAuthenticatorExtensions(Buffer.alloc(54))).toThrow(
+      "invalid authenticator data",
+    );
+
+    const truncatedCredentialId = Buffer.alloc(55);
+    truncatedCredentialId.writeUInt16BE(1, 53);
+    expect(() => parseAuthenticatorExtensions(truncatedCredentialId)).toThrow(
+      "invalid authenticator data",
+    );
+
+    expect(() =>
+      parseAuthenticatorExtensions(
+        authenticatorDataWithCredentialData(Buffer.from([0xff])),
+      ),
+    ).toThrow("invalid authenticator data");
+  });
+
+  it("rejects extra credential data after the extensions", () => {
+    const authData = authenticatorDataWithCredentialData(
+      cbor.encode(new Map([[1, 2]])),
+      cbor.encode({ apple_bundle_version_01: "1" }),
+      cbor.encode("unexpected"),
+    );
+
+    expect(() => parseAuthenticatorExtensions(authData)).toThrow(
+      "invalid authenticator extensions",
+    );
+  });
+
+  it("rejects an extension section that is not a CBOR map", () => {
+    const authData = authenticatorDataWithExtensions("not a map");
+
+    expect(() => parseAuthenticatorExtensions(authData)).toThrow(
+      "invalid authenticator extensions",
+    );
+  });
+
+  it("rejects extensionless attestations when extensions are required", () => {
+    expect(() =>
+      verifyAttestation({
+        attestation: ATTESTATION,
+        challenge: CHALLENGE,
+        keyId: KEY_ID,
+        bundleIdentifier: BUNDLE_IDENTIFIER,
+        teamIdentifier: TEAM_IDENTIFIER,
+        allowDevelopmentEnvironment: true,
+        authenticatorExtensions: { required: true },
+      }),
+    ).toThrow("authenticator extensions are required");
+  });
+
   it("should verify attestation successfully", async () => {
     const developmentResult = verifyAttestation({
       attestation: ATTESTATION,
@@ -35,6 +250,8 @@ describe("verifyAttestation", () => {
     });
 
     expect(developmentResult.environment).toEqual("development");
+    expect(developmentResult.validationCategory).toBeUndefined();
+    expect(developmentResult.bundleVersion).toBeUndefined();
     expect(
       developmentResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0,
     ).toBeTruthy();
@@ -57,6 +274,8 @@ describe("verifyAttestation", () => {
       productionResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0,
     ).toBeTruthy();
     expect(productionResult.environment).toEqual("production");
+    expect(productionResult.validationCategory).toBeUndefined();
+    expect(productionResult.bundleVersion).toBeUndefined();
 
     expect(Buffer.from(productionResult.receipt).toString("base64")).toEqual(
       "MIAGCSqGSIb3DQEHAqCAMIACAQExDzANBglghkgBZQMEAgEFADCABgkqhkiG9w0BBwGggCSABIID6DGCBG0wMQIBAgIBAQQpVjhINkxROTQ0OC5pby51ZWJlbGFja2VyLkFwcEF0dGVzdEV4YW1wbGUwggNCAgEDAgEBBIIDODCCAzQwggK6oAMCAQICBgGNhWb/TjAKBggqhkjOPQQDAjBPMSMwIQYDVQQDDBpBcHBsZSBBcHAgQXR0ZXN0YXRpb24gQ0EgMTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yNDAyMDYyMTA4NTZaFw0yNDEyMjExMjQyNTZaMIGRMUkwRwYDVQQDDEA0ODJmM2EyZDk5YTgxNWIyZmYyYjE1OWY3YjNhZmI4YTE4MDQ3NGIxY2FmMTlhYzM2ZDNjMGNiNDA5MDEwOWIzMRowGAYDVQQLDBFBQUEgQ2VydGlmaWNhdGlvbjETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABNmCnsCaXyvQ4i195d5i77yogok8VQyahZi7u0x3rD8ZYWOrI1j4ynUUaKRrZF1DAAUx/JR2AE15W/2DHeVWKoajggE9MIIBOTAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIE8DCBigYJKoZIhvdjZAgFBH0we6QDAgEKv4kwAwIBAb+JMQMCAQC/iTIDAgEBv4kzAwIBAb+JNCsEKVY4SDZMUTk0NDguaW8udWViZWxhY2tlci5BcHBBdHRlc3RFeGFtcGxlpQYEBHNrcyC/iTYDAgEFv4k3AwIBAL+JOQMCAQC/iToDAgEAv4k7AwIBADBXBgkqhkiG92NkCAcESjBIv4p4CAQGMTcuMi4xv4hQBwIFAP////+/insHBAUyMUM2Nr+KfQgEBjE3LjIuMb+KfgMCAQC/iwwPBA0yMS4zLjY2LjAuMCwwMDMGCSqGSIb3Y2QIAgQmMCShIgQgHAjAA3YfyPmBfpbhyATscagca6usC+3RLraujJiQ9yUwCgYIKoZIzj0EAwIDaAAwZQIxAN400SyHvzYVyOQPVuKJ/LV3IfXN4lhc3PzteZB5Gw3ZVzZ7yOJ/BymnlIG0IzJd2gIwS2TLiY9yzCHOzLp6BCAmMpuTWp3J7AP6wDy800pv4IkGnF0HWUwLvQTYDwLowWY/MCgCAQQCAQEEID6e9Qt/8PmFME97ZgiVxMLaA05D2vs4W3FSiY0ibAA3MGACAQUCAQEEWGNmOGxtVFdLckdFN05GeXpzREFjQmZ4UlBzNjlGZVhxQ0RRTk5NeWNJMnVDY0tIcjdMYmIwRHYEgYk3MHppNHV5QVU0Rjd4Z0JwcUFhWHVqdkZRK0VWSCtRPT0wDgIBBgIBAQQGQVRURVNUMBICAQcCAQEECnByb2R1Y3Rpb24wIAIBDAIBAQQYMjAyNC0wMi0wN1QyMTowODo1Ni4zMDhaMCACARUCAQEEGDIwMjQtMDUtMDdUMjE6MDg6NTYuMzA4WgAAAAAAAKCAMIIDrTCCA1SgAwIBAgIQfc2ZUS2Mfc0WC94OOIF6QjAKBggqhkjOPQQDAjB8MTAwLgYDVQQDDCdBcHBsZSBBcHBsaWNhdGlvbiBJbnRlZ3JhdGlvbiBDQSA1IC0gRzExJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzAeFw0yMzAzMDgxNTI5MTdaFw0yNDA0MDYxNTI5MTZaMFoxNjA0BgNVBAMMLUFwcGxpY2F0aW9uIEF0dGVzdGF0aW9uIEZyYXVkIFJlY2VpcHQgU2lnbmluZzETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATamChn713SKawbvb6ccQntP9dLpRl5GLBEbBoyL+ZWV0ns+bG71QRzAmzmlNgd08gI3YJ+HrPL+/H9KinifxD9o4IB2DCCAdQwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBTZF/5LZ5A4S5L0287VV4AUC489yTBDBggrBgEFBQcBAQQ3MDUwMwYIKwYBBQUHMAGGJ2h0dHA6Ly9vY3NwLmFwcGxlLmNvbS9vY3NwMDMtYWFpY2E1ZzEwMTCCARwGA1UdIASCARMwggEPMIIBCwYJKoZIhvdjZAUBMIH9MIHDBggrBgEFBQcCAjCBtgyBs1JlbGlhbmNlIG9uIHRoaXMgY2VydGlmaWNhdGUgYnkgYW55IHBhcnR5IGFzc3VtZXMgYWNjZXB0YW5jZSBvZiB0aGUgdGhlbiBhcHBsaWNhYmxlIHN0YW5kYXJkIHRlcm1zIGFuZCBjb25kaXRpb25zIG9mIHVzZSwgY2VydGlmaWNhdGUgcG9saWN5IGFuZCBjZXJ0aWZpY2F0aW9uIHByYWN0aWNlIHN0YXRlbWVudHMuMDUGCCsGAQUFBwIBFilodHRwOi8vd3d3LmFwcGxlLmNvbS9jZXJ0aWZpY2F0ZWF1dGhvcml0eTAdBgNVHQ4EFgQUTPGnnxBhiho5ZMxt5ts7B2KXdr0wDgYDVR0PAQH/BAQDAgeAMA8GCSqGSIb3Y2QMDwQCBQAwCgYIKoZIzj0EAwIDRwAwRAIgettk4nWcTwUW/yxJ2/OQLC8RLKZ3jlCCCnSDnKw7m+wCIEU1x2AqMkBN+SqBZ/yXtnLgCZnUKYqW5wXL7QlwF1CNMIIC+TCCAn+gAwIBAgIQVvuD1Cv/jcM3mSO1Wq5uvTAKBggqhkjOPQQDAzBnMRswGQYDVQQDDBJBcHBsZSBSb290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzAeFw0xOTAzMjIxNzUzMzNaFw0zNDAzMjIwMDAwMDBaMHwxMDAuBgNVBAMMJ0FwcGxlIEFwcGxpY2F0aW9uIEludGVncmF0aW9uIENBIDUgLSBHMTEmMCQGA1UECwwdQXBwbGUgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkxEzARBgNVBAoMCkFwcGxlIEluYy4xCzAJBgNVBAYTAlVTMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEks5jvX2GsasoCjsc4a/7BJSAkaz2Md+myyg1b0RL4SHlV90SjY26gnyVvkn6vjPKrs0EGfEvQyX69L6zy4N+uqOB9zCB9DAPBgNVHRMBAf8EBTADAQH/MB8GA1UdIwQYMBaAFLuw3qFYM4iapIqZ3r6966/ayySrMEYGCCsGAQUFBwEBBDowODA2BggrBgEFBQcwAYYqaHR0cDovL29jc3AuYXBwbGUuY29tL29jc3AwMy1hcHBsZXJvb3RjYWczMDcGA1UdHwQwMC4wLKAqoCiGJmh0dHA6Ly9jcmwuYXBwbGUuY29tL2FwcGxlcm9vdGNhZzMuY3JsMB0GA1UdDgQWBBTZF/5LZ5A4S5L0287VV4AUC489yTAOBgNVHQ8BAf8EBAMCAQYwEAYKKoZIhvdjZAYCAwQCBQAwCgYIKoZIzj0EAwMDaAAwZQIxAI1vpp+h4OTsW05zipJ/PXhTmI/02h9YHsN1Sv44qEwqgxoaqg2mZG3huZPo0VVM7QIwZzsstOHoNwd3y9XsdqgaOlU7PzVqyMXmkrDhYb6ASWnkXyupbOERAqrMYdk4t3NKMIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcNMTQwNDMwMTgxOTA2WhcNMzkwNDMwMTgxOTA2WjBnMRswGQYDVQQDDBJBcHBsZSBSb290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49AgEGBSuBBAAiA2IABJjpLz1AcqTtkyJygRMc3RCV8cWjTnHcFBbZDuWmBSp3ZHtfTjjTuxxEtX/1H7YyYl3J6YRbTzBPEVoA/VhYDKX1DyxNB0cTddqXl5dvMVztK517IDvYuVTZXpmkOlEKMaNCMEAwHQYDVR0OBBYEFLuw3qFYM4iapIqZ3r6966/ayySrMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2gAMGUCMQCD6cHEFl4aXTQY2e3v9GwOAEZLuN+yRhHFD/3meoyhpmvOwgPUnPWTxnS4at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM6BgD56KyKAAAMYH8MIH5AgEBMIGQMHwxMDAuBgNVBAMMJ0FwcGxlIEFwcGxpY2F0aW9uIEludGVncmF0aW9uIENBIDUgLSBHMTEmMCQGA1UECwwdQXBwbGUgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkxEzARBgNVBAoMCkFwcGxlIEluYy4xCzAJBgNVBAYTAlVTAhB9zZlRLYx9zRYL3g44gXpCMA0GCWCGSAFlAwQCAQUAMAoGCCqGSM49BAMCBEYwRAIgdJQQBqE3s26uvNhmfQl2h/gc4dhihYR0XXjcuIpm3JACICZBOK0Hs0m5B4Y+agZ1Hp4ST4ty98krkIdhB3MkDpf6AAAAAAAA",

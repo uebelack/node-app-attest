@@ -13,6 +13,165 @@ const APPATTESTPROD = Buffer.concat([
   Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
 ]).toString("hex");
 
+/**
+ * @typedef {object} AuthenticatorExtensionsPolicy
+ * @property {number[]} [allowedValidationCategories] Apple validation categories accepted by the server.
+ * @property {string[]} [allowedBundleVersions] Bundle versions accepted by the server.
+ * @property {boolean} [required] Require both supported Apple authenticator extensions.
+ */
+
+/**
+ * @typedef {object} AuthenticatorExtensionsResult
+ * @property {number} [validationCategory] The verified Apple validation category.
+ * @property {string} [bundleVersion] The verified app bundle version.
+ */
+
+/**
+ * @typedef {Record<string, any> & {authenticatorExtensions?: AuthenticatorExtensionsPolicy}} VerifyAttestationParams
+ */
+
+/**
+ * @typedef {object} VerifyAttestationResult
+ * @property {*} keyId
+ * @property {*} publicKey
+ * @property {*} receipt
+ * @property {string} environment
+ * @property {number} [validationCategory]
+ * @property {string} [bundleVersion]
+ */
+
+function validateAuthenticatorExtensionsPolicy(policy) {
+  const categories = policy?.allowedValidationCategories;
+  const versions = policy?.allowedBundleVersions;
+  const valid =
+    policy !== null &&
+    typeof policy === "object" &&
+    !Array.isArray(policy) &&
+    (policy.required === undefined || typeof policy.required === "boolean") &&
+    (categories === undefined ||
+      (Array.isArray(categories) &&
+        categories.every(
+          (category) =>
+            Number.isInteger(category) &&
+            category >= 0 &&
+            category <= 0xffffffff,
+        ))) &&
+    (versions === undefined ||
+      (Array.isArray(versions) &&
+        versions.every(
+          (version) => typeof version === "string" && version.length > 0,
+        )));
+
+  if (!valid) {
+    throw new Error("invalid authenticator extensions policy");
+  }
+}
+
+/**
+ * @param {Buffer} authData
+ * @param {AuthenticatorExtensionsPolicy} [authenticatorExtensions]
+ * @returns {AuthenticatorExtensionsResult}
+ */
+export function parseAuthenticatorExtensions(
+  authData,
+  authenticatorExtensions = {},
+) {
+  validateAuthenticatorExtensionsPolicy(authenticatorExtensions);
+  if (!Buffer.isBuffer(authData) || authData.length < 55) {
+    throw new Error("invalid authenticator data");
+  }
+
+  const credentialIdLength = authData.readUInt16BE(53);
+  const credentialDataOffset = 55 + credentialIdLength;
+  if (credentialDataOffset > authData.length) {
+    throw new Error("invalid authenticator data");
+  }
+
+  let decodedCredentialData;
+  try {
+    decodedCredentialData = cbor.decodeAllSync(
+      authData.subarray(credentialDataOffset),
+    );
+  } catch {
+    throw new Error("invalid authenticator data");
+  }
+
+  if (decodedCredentialData.length < 2) {
+    if (authenticatorExtensions.required) {
+      throw new Error("authenticator extensions are required");
+    }
+    return {};
+  }
+
+  if (decodedCredentialData.length !== 2) {
+    throw new Error("invalid authenticator extensions");
+  }
+
+  const extensions = decodedCredentialData[1];
+  const isPlainObject =
+    extensions !== null &&
+    typeof extensions === "object" &&
+    !Array.isArray(extensions) &&
+    !Buffer.isBuffer(extensions) &&
+    (Object.getPrototypeOf(extensions) === Object.prototype ||
+      Object.getPrototypeOf(extensions) === null);
+  if (!(extensions instanceof Map) && !isPlainObject) {
+    throw new Error("invalid authenticator extensions");
+  }
+  const getExtension = (name) =>
+    extensions instanceof Map ? extensions.get(name) : extensions?.[name];
+  const validationCategory = getExtension("apple_validation_category_01");
+  const bundleVersion = getExtension("apple_bundle_version_01");
+  const result = {};
+
+  if (validationCategory !== undefined) {
+    if (
+      !Buffer.isBuffer(validationCategory) ||
+      validationCategory.length !== 4
+    ) {
+      throw new Error("invalid apple_validation_category_01 extension");
+    }
+    result.validationCategory = validationCategory.readUInt32LE();
+    if (
+      authenticatorExtensions.allowedValidationCategories &&
+      !authenticatorExtensions.allowedValidationCategories.includes(
+        result.validationCategory,
+      )
+    ) {
+      throw new Error("validation category is not allowed");
+    }
+  }
+
+  if (bundleVersion !== undefined) {
+    if (typeof bundleVersion !== "string" || bundleVersion.length === 0) {
+      throw new Error("invalid apple_bundle_version_01 extension");
+    }
+    result.bundleVersion = bundleVersion;
+    if (
+      authenticatorExtensions.allowedBundleVersions &&
+      !authenticatorExtensions.allowedBundleVersions.includes(
+        result.bundleVersion,
+      )
+    ) {
+      throw new Error("bundle version is not allowed");
+    }
+  }
+
+  if (
+    authenticatorExtensions.required &&
+    (result.validationCategory === undefined ||
+      result.bundleVersion === undefined)
+  ) {
+    throw new Error("authenticator extensions are required");
+  }
+
+  return result;
+}
+
+/**
+ * @param {VerifyAttestationParams} params
+ * @returns {VerifyAttestationResult}
+ */
 function verifyAttestation(params) {
   const {
     attestation,
@@ -21,6 +180,7 @@ function verifyAttestation(params) {
     bundleIdentifier,
     teamIdentifier,
     allowDevelopmentEnvironment,
+    authenticatorExtensions,
   } = params;
 
   if (!bundleIdentifier) {
@@ -197,6 +357,11 @@ function verifyAttestation(params) {
     throw new Error("credentialId does not match");
   }
 
+  const verifiedExtensions = parseAuthenticatorExtensions(
+    authData,
+    authenticatorExtensions,
+  );
+
   return {
     keyId,
     publicKey: clientCertificate.publicKey.export({
@@ -205,6 +370,7 @@ function verifyAttestation(params) {
     }),
     receipt: decodedAttestation.attStmt.receipt,
     environment: aaguid === APPATTESTPROD ? "production" : "development",
+    ...verifiedExtensions,
   };
 }
 
