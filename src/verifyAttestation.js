@@ -139,6 +139,9 @@ export function parseAuthenticatorExtensions(authData, authenticatorExtensions =
     throw new Error("invalid authenticator data");
   }
 
+  // The credential public key is followed by the extensions map, if any. Apple does not set the
+  // "extension data included" flag in authData (see the sample in Apple's validation guide), so
+  // the presence of a second CBOR item is what counts.
   /** @type {any[]} untrusted CBOR, its structure is validated below */
   let decodedCredentialData;
   try {
