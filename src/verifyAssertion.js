@@ -24,6 +24,10 @@ function verifyAssertion(params) {
     throw new Error("publicKey is required");
   }
 
+  if (!Number.isInteger(signCount) || signCount < 0) {
+    throw new Error("signCount is required");
+  }
+
   let decodedAssertion;
 
   try {

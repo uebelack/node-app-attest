@@ -18,6 +18,7 @@ describe("verifyAssertion", () => {
       publicKey: PUBLIC_KEY,
       bundleIdentifier: BUNDLE_IDENTIFIER,
       teamIdentifier: TEAM_IDENTIFIER,
+      signCount: 0,
     });
 
     expect(result).toEqual({ signCount: 1 });
@@ -66,6 +67,23 @@ describe("verifyAssertion", () => {
     }).toThrow("publicKey is required");
   });
 
+  it.each([undefined, null, "0", -1, 0.5, Number.NaN])(
+    "should require signCount (%s)",
+    (signCount) => {
+      expect(() => {
+        verifyAssertion({
+          assertion: ASSERTION,
+          payload:
+            '{"subject":"Lorem ipsum","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}',
+          publicKey: PUBLIC_KEY,
+          bundleIdentifier: BUNDLE_IDENTIFIER,
+          teamIdentifier: TEAM_IDENTIFIER,
+          signCount,
+        });
+      }).toThrow("signCount is required");
+    },
+  );
+
   it("should throw invalid assertion", () => {
     expect(() => {
       verifyAssertion({
@@ -76,6 +94,7 @@ describe("verifyAssertion", () => {
         publicKey: PUBLIC_KEY,
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
+        signCount: 0,
       });
     }).toThrow("invalid assertion");
   });
@@ -88,6 +107,7 @@ describe("verifyAssertion", () => {
         publicKey: PUBLIC_KEY,
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
+        signCount: 0,
       });
     }).toThrow("invalid signature");
   });
@@ -101,6 +121,7 @@ describe("verifyAssertion", () => {
         publicKey: PUBLIC_KEY,
         teamIdentifier: TEAM_IDENTIFIER,
         bundleIdentifier: "INVALID",
+        signCount: 0,
       });
     }).toThrow("appId does not match");
   });
@@ -114,7 +135,7 @@ describe("verifyAssertion", () => {
         publicKey: PUBLIC_KEY,
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
-        signCount: 10,
+        signCount: 1,
       });
     }).toThrow("invalid signCount");
   });
