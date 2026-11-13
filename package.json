@@ -12,9 +12,20 @@
     "node",
     "security"
   ],
+  "homepage": "https://github.com/uebelack/node-app-attest#readme",
+  "bugs": {
+    "url": "https://github.com/uebelack/node-app-attest/issues"
+  },
   "license": "MIT",
   "author": "David Übelacker",
-  "repository": "https://github.com/uebelack/node-app-attest",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uebelack/node-app-attest.git"
+  },
+  "files": [
+    "src",
+    "types"
+  ],
   "type": "module",
   "main": "src/index.js",
   "types": "types/index.d.ts",

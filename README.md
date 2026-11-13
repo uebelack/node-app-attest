@@ -27,6 +27,8 @@ npm install node-app-attest
 pnpm add node-app-attest
 ```
 
+Requires Node.js 24 or later.
+
 ## Usage
 
 This library provides two methods, one to verify an attestation and another to verify the attestations:
@@ -297,4 +299,4 @@ MIT License. See `LICENSE` for more information.
 [coverage-shield]: https://img.shields.io/coveralls/github/uebelack/node-app-attest.svg?style=for-the-badge
 [coverage-url]: https://coveralls.io/github/uebelack/node-app-attest
 [license-shield]: https://img.shields.io/github/license/uebelack/node-app-attest.svg?style=for-the-badge
-[license-url]: https://github.com/uebelack/node-app-attest/blob/master/LICENSE
+[license-url]: https://github.com/uebelack/node-app-attest/blob/main/LICENSE
