@@ -14,15 +14,12 @@ const APPATTESTPROD = Buffer.concat([
 ]).toString("hex");
 
 // Signature-algorithm OID -> digest, used to verify a certificate's signature
-// with the hash the certificate itself declares.
+// with the hash the certificate itself declares. Apple's App Attest chain only uses ECDSA.
 /** @type {Record<string, string>} */
 const SIGNATURE_ALGORITHM_DIGESTS = {
   "1.2.840.10045.4.3.2": "sha256", // ecdsa-with-SHA256
   "1.2.840.10045.4.3.3": "sha384", // ecdsa-with-SHA384
   "1.2.840.10045.4.3.4": "sha512", // ecdsa-with-SHA512
-  "1.2.840.113549.1.1.11": "sha256", // sha256WithRSAEncryption
-  "1.2.840.113549.1.1.12": "sha384", // sha384WithRSAEncryption
-  "1.2.840.113549.1.1.13": "sha512", // sha512WithRSAEncryption
 };
 
 /**
