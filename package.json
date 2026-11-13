@@ -26,7 +26,7 @@
     "format:check": "prettier --check .",
     "format:write": "prettier --write ."
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "pnpm@12.18.0",
   "jest": {
     "collectCoverage": true,
     "collectCoverageFrom": [

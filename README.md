@@ -22,7 +22,9 @@ See https://developer.apple.com/documentation/devicecheck/establishing_your_app_
 ## Installation
 
 ```bash
-yarn add node-app-attest / node install node-app-attest
+npm install node-app-attest
+# or
+pnpm add node-app-attest
 ```
 
 ## Usage
