@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.2.0] - 2026-11-13
+
+### Features
+
+- feat: validate App Attest authenticator extensions
+
+### Bug fixes
+
+- fix: verify certificate chains with the declared signature algorithm
+
+### Refactoring
+
+- ♻️ only accept ECDSA signature algorithms in the chain check
+
+### Other
+
+- 🏷️ export the authenticator extension types
+
 ## [2.1.0] - 2026-11-13
 
 ### Security
