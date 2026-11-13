@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0] - 2026-11-13
+
+### Security
+
+- 🔒 require signCount in verifyAssertion
+
+### Refactoring
+
+- ♻️ replace cbor with cbor2
+
+### Other
+
+- 🏷️ add JSDoc types for parameters and results
+
 ## [2.0.0] - 2026-11-13
 
 ### Breaking changes
