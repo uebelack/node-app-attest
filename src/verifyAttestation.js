@@ -1,4 +1,4 @@
-import cbor from "cbor";
+import { decodeSequence } from "cbor2";
 import { createHash, X509Certificate } from "crypto";
 import * as asn1js from "asn1js";
 import * as pkijs from "pkijs";
@@ -46,7 +46,7 @@ function verifyAttestation(params) {
   let decodedAttestations;
 
   try {
-    decodedAttestations = cbor.decodeAllSync(attestation);
+    decodedAttestations = [...decodeSequence(attestation)];
   } catch {
     throw new Error("invalid attestation");
   }
@@ -62,15 +62,17 @@ function verifyAttestation(params) {
     decodedAttestation.attStmt?.x5c?.length !== 2 ||
     !decodedAttestation.attStmt?.receipt ||
     !decodedAttestation.authData ||
-    !Buffer.isBuffer(decodedAttestation.attStmt.x5c[0]) ||
-    !Buffer.isBuffer(decodedAttestation.attStmt.x5c[1]) ||
-    !Buffer.isBuffer(decodedAttestation.attStmt.receipt) ||
-    !Buffer.isBuffer(decodedAttestation.authData)
+    !(decodedAttestation.attStmt.x5c[0] instanceof Uint8Array) ||
+    !(decodedAttestation.attStmt.x5c[1] instanceof Uint8Array) ||
+    !(decodedAttestation.attStmt.receipt instanceof Uint8Array) ||
+    !(decodedAttestation.authData instanceof Uint8Array)
   ) {
     throw new Error("invalid attestation");
   }
 
-  const { authData, attStmt } = decodedAttestation;
+  const { attStmt } = decodedAttestation;
+  const authData = Buffer.from(decodedAttestation.authData);
+  const receipt = Buffer.from(attStmt.receipt);
 
   // https://developer.apple.com/documentation/devicecheck/validating_apps_that_connect_to_your_server
   // 1. Verify that the x5c array contains the intermediate and leaf certificates for App Attest,
@@ -112,7 +114,7 @@ function verifyAttestation(params) {
   //    data (authData from the decoded object).
   const clientDataHash = createHash("sha256").update(challenge).digest();
 
-  const nonceData = Buffer.concat([decodedAttestation.authData, clientDataHash]);
+  const nonceData = Buffer.concat([authData, clientDataHash]);
 
   // 3. Generate a new SHA256 hash of the composite item to create nonce.
   const nonce = createHash("sha256").update(nonceData).digest("hex");
@@ -189,7 +191,7 @@ function verifyAttestation(params) {
       type: "spki",
       format: "pem",
     }),
-    receipt: decodedAttestation.attStmt.receipt,
+    receipt,
     environment: aaguid === APPATTESTPROD ? "production" : "development",
   };
 }

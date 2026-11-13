@@ -1,4 +1,4 @@
-import cbor from "cbor";
+import { decode } from "cbor2";
 import { createHash, createVerify } from "crypto";
 
 function verifyAssertion(params) {
@@ -31,12 +31,20 @@ function verifyAssertion(params) {
   let decodedAssertion;
 
   try {
-    decodedAssertion = cbor.decodeAllSync(assertion)[0];
+    decodedAssertion = decode(assertion);
   } catch {
     throw new Error("invalid assertion");
   }
 
-  const { signature, authenticatorData } = decodedAssertion;
+  if (
+    !(decodedAssertion?.signature instanceof Uint8Array) ||
+    !(decodedAssertion.authenticatorData instanceof Uint8Array)
+  ) {
+    throw new Error("invalid assertion");
+  }
+
+  const { signature } = decodedAssertion;
+  const authenticatorData = Buffer.from(decodedAssertion.authenticatorData);
 
   // 1. Compute clientDataHash as the SHA256 hash of clientData.
   const clientDataHash = createHash("sha256").update(payload).digest();

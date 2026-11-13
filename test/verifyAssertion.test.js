@@ -1,3 +1,4 @@
+import { encode } from "cbor2";
 import verifyAssertion from "../src/verifyAssertion.js";
 
 const ASSERTION = Buffer.from(
@@ -13,6 +14,20 @@ describe("verifyAssertion", () => {
   it("should verify assertion successfully", () => {
     const result = verifyAssertion({
       assertion: ASSERTION,
+      payload:
+        '{"subject":"Lorem ipsum","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}',
+      publicKey: PUBLIC_KEY,
+      bundleIdentifier: BUNDLE_IDENTIFIER,
+      teamIdentifier: TEAM_IDENTIFIER,
+      signCount: 0,
+    });
+
+    expect(result).toEqual({ signCount: 1 });
+  });
+
+  it("should accept the assertion as a Uint8Array", () => {
+    const result = verifyAssertion({
+      assertion: new Uint8Array(ASSERTION),
       payload:
         '{"subject":"Lorem ipsum","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}',
       publicKey: PUBLIC_KEY,
@@ -91,6 +106,24 @@ describe("verifyAssertion", () => {
         payload:
           '{"subject":"Lorem ipsum","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}',
 
+        publicKey: PUBLIC_KEY,
+        bundleIdentifier: BUNDLE_IDENTIFIER,
+        teamIdentifier: TEAM_IDENTIFIER,
+        signCount: 0,
+      });
+    }).toThrow("invalid assertion");
+  });
+
+  it.each([
+    ["not a map", encode("assertion")],
+    ["missing signature", encode({ authenticatorData: new Uint8Array(37) })],
+    ["missing authenticatorData", encode({ signature: new Uint8Array(70) })],
+    ["trailing data", Buffer.concat([ASSERTION, encode(0)])],
+  ])("should throw invalid assertion (%s)", (_, assertion) => {
+    expect(() => {
+      verifyAssertion({
+        assertion,
+        payload: "{}",
         publicKey: PUBLIC_KEY,
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
