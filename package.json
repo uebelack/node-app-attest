@@ -27,9 +27,9 @@
     "format:write": "oxfmt ."
   },
   "dependencies": {
-    "asn1js": "^3.0.7",
-    "cbor": "^10.0.11",
-    "pkijs": "^3.3.3"
+    "asn1js": "^3.1.0",
+    "cbor": "^10.0.12",
+    "pkijs": "^3.4.3"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

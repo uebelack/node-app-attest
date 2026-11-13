@@ -167,13 +167,13 @@ importers:
   .:
     dependencies:
       asn1js:
-        specifier: ^3.0.7
+        specifier: ^3.1.0
         version: 3.1.0
       cbor:
-        specifier: ^10.0.11
+        specifier: ^10.0.12
         version: 10.0.12
       pkijs:
-        specifier: ^3.3.3
+        specifier: ^3.4.3
         version: 3.4.3
     devDependencies:
       '@types/node':
