@@ -13,6 +13,32 @@ const APPATTESTPROD = Buffer.concat([
   Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
 ]).toString("hex");
 
+/**
+ * @typedef {object} VerifyAttestationParams
+ * @property {Uint8Array} attestation The attestation object created by DCAppAttestService.attestKey.
+ * @property {string | Uint8Array} challenge The one-time challenge the server sent to the app.
+ * @property {string} keyId The base64 key identifier created by DCAppAttestService.generateKey.
+ * @property {string} bundleIdentifier The app's bundle identifier, e.g. org.example.AppAttestExample.
+ * @property {string} teamIdentifier The Apple developer team identifier, e.g. V8H6LQ9448.
+ * @property {boolean} [allowDevelopmentEnvironment] Accept attestations from the development environment.
+ *   Should only be true on test environments.
+ */
+
+/**
+ * @typedef {object} VerifyAttestationResult
+ * @property {string} keyId The verified key identifier.
+ * @property {string} publicKey The public key of the attested key pair as PEM (SPKI). Store it to verify assertions.
+ * @property {Buffer} receipt The App Attest receipt, e.g. for fraud risk assessment.
+ * @property {"production" | "development"} environment The environment the attestation was created in.
+ */
+
+/**
+ * Verifies an App Attest attestation.
+ *
+ * @param {VerifyAttestationParams} params
+ * @returns {VerifyAttestationResult}
+ * @throws {Error} If the attestation is invalid.
+ */
 function verifyAttestation(params) {
   const {
     attestation,
@@ -43,6 +69,7 @@ function verifyAttestation(params) {
     throw new Error("keyId is required");
   }
 
+  /** @type {any[]} untrusted CBOR, its structure is validated below */
   let decodedAttestations;
 
   try {
@@ -78,9 +105,10 @@ function verifyAttestation(params) {
   // 1. Verify that the x5c array contains the intermediate and leaf certificates for App Attest,
   //    starting from the credential certificate in the first data buffer in the array (credcert).
   //    Verify the validity of the certificates using Apple’s App Attest root certificate.
+  /** @type {X509Certificate[]} */
   let certificates;
   try {
-    certificates = attStmt.x5c.map((data) => new X509Certificate(data));
+    certificates = attStmt.x5c.map((/** @type {Uint8Array} */ data) => new X509Certificate(data));
   } catch {
     throw new Error("invalid certificate");
   }
@@ -124,10 +152,10 @@ function verifyAttestation(params) {
   //    string equals nonce.
   const asn1 = asn1js.fromBER(clientCertificate.raw);
   const certificate = new pkijs.Certificate({ schema: asn1.result });
-  const extension = certificate.extensions.find((e) => e.extnID === "1.2.840.113635.100.8.2");
   try {
+    const extension = certificate.extensions?.find((e) => e.extnID === "1.2.840.113635.100.8.2");
     const actualNonce = Buffer.from(
-      extension.parsedValue.valueBlock.value[0].valueBlock.value[0].valueBlock.valueHex,
+      extension?.parsedValue.valueBlock.value[0].valueBlock.value[0].valueBlock.valueHex,
     ).toString("hex");
     if (actualNonce !== nonce) {
       throw new Error("nonce does not match");
@@ -141,7 +169,7 @@ function verifyAttestation(params) {
   const publicKey = Buffer.from(
     certificate.subjectPublicKeyInfo.subjectPublicKey.valueBlock.valueHex,
   );
-  const publicKeyHash = createHash("sha256").update(publicKey, "hex").digest("base64");
+  const publicKeyHash = createHash("sha256").update(publicKey).digest("base64");
   if (publicKeyHash !== keyId) {
     throw new Error("keyId does not match");
   }
@@ -187,10 +215,12 @@ function verifyAttestation(params) {
 
   return {
     keyId,
-    publicKey: clientCertificate.publicKey.export({
-      type: "spki",
-      format: "pem",
-    }),
+    publicKey: /** @type {string} */ (
+      clientCertificate.publicKey.export({
+        type: "spki",
+        format: "pem",
+      })
+    ),
     receipt,
     environment: aaguid === APPATTESTPROD ? "production" : "development",
   };

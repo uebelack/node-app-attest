@@ -2,6 +2,8 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     "allowJs": true,
+    "checkJs": true,
+    "types": ["node"],
     "skipLibCheck": true,
     "declaration": true,
     "emitDeclarationOnly": true,
