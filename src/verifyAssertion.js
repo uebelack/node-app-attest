@@ -2,14 +2,7 @@ import cbor from "cbor";
 import { createHash, createVerify } from "crypto";
 
 function verifyAssertion(params) {
-  const {
-    assertion,
-    payload,
-    publicKey,
-    bundleIdentifier,
-    teamIdentifier,
-    signCount,
-  } = params;
+  const { assertion, payload, publicKey, bundleIdentifier, teamIdentifier, signCount } = params;
 
   if (!bundleIdentifier) {
     throw new Error("bundleIdentifier is required");

@@ -35,9 +35,7 @@ describe("verifyAttestation", () => {
     });
 
     expect(developmentResult.environment).toEqual("development");
-    expect(
-      developmentResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0,
-    ).toBeTruthy();
+    expect(developmentResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0).toBeTruthy();
     expect(developmentResult.keyId).toEqual(attestationDevelopment.keyId);
 
     expect(Buffer.from(developmentResult.receipt).toString("base64")).toEqual(
@@ -53,9 +51,7 @@ describe("verifyAttestation", () => {
     });
 
     expect(productionResult.keyId).toEqual(attestationProduction.keyId);
-    expect(
-      productionResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0,
-    ).toBeTruthy();
+    expect(productionResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0).toBeTruthy();
     expect(productionResult.environment).toEqual("production");
 
     expect(Buffer.from(productionResult.receipt).toString("base64")).toEqual(
@@ -224,9 +220,7 @@ describe("verifyAttestation", () => {
         challenge: CHALLENGE,
         keyId: KEY_ID,
       });
-    }).toThrow(
-      "sub CA certificate is not signed by Apple App Attestation Root CA",
-    );
+    }).toThrow("sub CA certificate is not signed by Apple App Attestation Root CA");
   });
 
   it("should verify client certificate signature", () => {
@@ -246,9 +240,7 @@ describe("verifyAttestation", () => {
         challenge: CHALLENGE,
         keyId: KEY_ID,
       });
-    }).toThrow(
-      "client CA certificate is not signed by Apple App Attestation CA 1",
-    );
+    }).toThrow("client CA certificate is not signed by Apple App Attestation CA 1");
   });
 
   it("should verify challenge", async () => {

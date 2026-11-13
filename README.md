@@ -239,9 +239,7 @@ app.post(`${API_PREFIX}/send-message`, (req, res) => {
       throw new Error("No authentication header");
     }
 
-    const { keyId, assertion } = JSON.parse(
-      Buffer.from(authentication, "base64").toString(),
-    );
+    const { keyId, assertion } = JSON.parse(Buffer.from(authentication, "base64").toString());
 
     if (keyId === undefined || assertion === undefined) {
       throw new Error("Invalid authentication");

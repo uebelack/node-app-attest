@@ -2,31 +2,41 @@
   "name": "node-app-attest",
   "version": "1.0.1",
   "description": "A JavaScript implementation of the App Attest protocol, which checks whether clients connecting to your server are valid instances of your app.",
-  "repository": "https://github.com/uebelack/node-app-attest",
-  "author": "David Übelacker",
+  "keywords": [
+    "app-attest",
+    "apple",
+    "attest",
+    "attestation",
+    "javascript",
+    "mobile",
+    "node",
+    "security"
+  ],
   "license": "MIT",
+  "author": "David Übelacker",
+  "repository": "https://github.com/uebelack/node-app-attest",
   "type": "module",
   "main": "src/index.js",
   "types": "types/index.d.ts",
-  "keywords": [
-    "apple",
-    "mobile",
-    "app-attest",
-    "attest",
-    "attestation",
-    "security",
-    "node",
-    "javascript"
-  ],
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "types": "tsc",
-    "lint:check": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "format:check": "prettier --check .",
-    "format:write": "prettier --write ."
+    "lint:check": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format:check": "oxfmt --check .",
+    "format:write": "oxfmt ."
   },
-  "packageManager": "pnpm@12.18.0",
+  "dependencies": {
+    "asn1js": "^3.0.7",
+    "cbor": "^10.0.11",
+    "pkijs": "^3.3.3"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "typescript": "^5.9.3"
+  },
   "jest": {
     "collectCoverage": true,
     "collectCoverageFrom": [
@@ -41,19 +51,5 @@
       }
     }
   },
-  "dependencies": {
-    "asn1js": "^3.0.7",
-    "cbor": "^10.0.11",
-    "pkijs": "^3.3.3"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@eslint/json": "^1.0.1",
-    "@eslint/markdown": "^7.5.1",
-    "eslint": "^10.0.0",
-    "globals": "^17.3.0",
-    "jest": "^30.2.0",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3"
-  }
+  "packageManager": "pnpm@12.18.0"
 }
