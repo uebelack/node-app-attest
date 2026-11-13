@@ -1,59 +1,58 @@
 {
   "name": "node-app-attest",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "A JavaScript implementation of the App Attest protocol, which checks whether clients connecting to your server are valid instances of your app.",
-  "repository": "https://github.com/uebelack/node-app-attest",
-  "author": "David Übelacker",
+  "keywords": [
+    "app-attest",
+    "apple",
+    "attest",
+    "attestation",
+    "javascript",
+    "mobile",
+    "node",
+    "security"
+  ],
+  "homepage": "https://github.com/uebelack/node-app-attest#readme",
+  "bugs": {
+    "url": "https://github.com/uebelack/node-app-attest/issues"
+  },
   "license": "MIT",
+  "author": "David Übelacker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uebelack/node-app-attest.git"
+  },
+  "files": [
+    "src",
+    "types"
+  ],
   "type": "module",
   "main": "src/index.js",
   "types": "types/index.d.ts",
-  "keywords": [
-    "apple",
-    "mobile",
-    "app-attest",
-    "attest",
-    "attestation",
-    "security",
-    "node",
-    "javascript"
-  ],
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "vitest run",
     "types": "tsc",
-    "lint:check": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "format:check": "prettier --check .",
-    "format:write": "prettier --write ."
-  },
-  "packageManager": "yarn@4.12.0",
-  "jest": {
-    "collectCoverage": true,
-    "collectCoverageFrom": [
-      "src/**/*.js"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
-      }
-    }
+    "lint:check": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format:check": "oxfmt --check .",
+    "format:write": "oxfmt ."
   },
   "dependencies": {
-    "asn1js": "^3.0.7",
-    "cbor": "^10.0.11",
-    "pkijs": "^3.3.3"
+    "asn1js": "^4.0.0",
+    "cbor": "^10.0.12",
+    "pkijs": "^4.0.1"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@eslint/json": "^1.0.1",
-    "@eslint/markdown": "^7.5.1",
-    "eslint": "^10.0.0",
-    "globals": "^17.3.0",
-    "jest": "^30.2.0",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3"
-  }
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-istanbul": "^5.1.0",
+    "cbor2": "^2.4.1",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "packageManager": "pnpm@12.18.0"
 }

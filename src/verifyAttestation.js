@@ -84,8 +84,7 @@ function verifyAttestation(params) {
   }
 
   const subCaCertificate = certificates.find(
-    (certificate) =>
-      certificate.subject.indexOf("Apple App Attestation CA 1") !== -1,
+    (certificate) => certificate.subject.indexOf("Apple App Attestation CA 1") !== -1,
   );
 
   if (!subCaCertificate) {
@@ -93,14 +92,11 @@ function verifyAttestation(params) {
   }
 
   if (!subCaCertificate.verify(APPLE_APP_ATTESTATION_ROOT_CA.publicKey)) {
-    throw new Error(
-      "sub CA certificate is not signed by Apple App Attestation Root CA",
-    );
+    throw new Error("sub CA certificate is not signed by Apple App Attestation Root CA");
   }
 
   const clientCertificate = certificates.find(
-    (certificate) =>
-      certificate.subject.indexOf("Apple App Attestation CA 1") === -1,
+    (certificate) => certificate.subject.indexOf("Apple App Attestation CA 1") === -1,
   );
 
   if (!clientCertificate) {
@@ -108,9 +104,7 @@ function verifyAttestation(params) {
   }
 
   if (!clientCertificate.verify(subCaCertificate.publicKey)) {
-    throw new Error(
-      "client CA certificate is not signed by Apple App Attestation CA 1",
-    );
+    throw new Error("client CA certificate is not signed by Apple App Attestation CA 1");
   }
 
   // 2. Create clientDataHash as the SHA256 hash of the one-time challenge your server sends to your
@@ -118,10 +112,7 @@ function verifyAttestation(params) {
   //    data (authData from the decoded object).
   const clientDataHash = createHash("sha256").update(challenge).digest();
 
-  const nonceData = Buffer.concat([
-    decodedAttestation.authData,
-    clientDataHash,
-  ]);
+  const nonceData = Buffer.concat([decodedAttestation.authData, clientDataHash]);
 
   // 3. Generate a new SHA256 hash of the composite item to create nonce.
   const nonce = createHash("sha256").update(nonceData).digest("hex");
@@ -131,13 +122,10 @@ function verifyAttestation(params) {
   //    string equals nonce.
   const asn1 = asn1js.fromBER(clientCertificate.raw);
   const certificate = new pkijs.Certificate({ schema: asn1.result });
-  const extension = certificate.extensions.find(
-    (e) => e.extnID === "1.2.840.113635.100.8.2",
-  );
+  const extension = certificate.extensions.find((e) => e.extnID === "1.2.840.113635.100.8.2");
   try {
     const actualNonce = Buffer.from(
-      extension.parsedValue.valueBlock.value[0].valueBlock.value[0].valueBlock
-        .valueHex,
+      extension.parsedValue.valueBlock.value[0].valueBlock.value[0].valueBlock.valueHex,
     ).toString("hex");
     if (actualNonce !== nonce) {
       throw new Error("nonce does not match");
@@ -151,9 +139,7 @@ function verifyAttestation(params) {
   const publicKey = Buffer.from(
     certificate.subjectPublicKeyInfo.subjectPublicKey.valueBlock.valueHex,
   );
-  const publicKeyHash = createHash("sha256")
-    .update(publicKey, "hex")
-    .digest("base64");
+  const publicKeyHash = createHash("sha256").update(publicKey, "hex").digest("base64");
   if (publicKeyHash !== keyId) {
     throw new Error("keyId does not match");
   }

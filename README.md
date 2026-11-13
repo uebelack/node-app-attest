@@ -22,8 +22,12 @@ See https://developer.apple.com/documentation/devicecheck/establishing_your_app_
 ## Installation
 
 ```bash
-yarn add node-app-attest / node install node-app-attest
+npm install node-app-attest
+# or
+pnpm add node-app-attest
 ```
+
+Requires Node.js 24 or later.
 
 ## Usage
 
@@ -237,9 +241,7 @@ app.post(`${API_PREFIX}/send-message`, (req, res) => {
       throw new Error("No authentication header");
     }
 
-    const { keyId, assertion } = JSON.parse(
-      Buffer.from(authentication, "base64").toString(),
-    );
+    const { keyId, assertion } = JSON.parse(Buffer.from(authentication, "base64").toString());
 
     if (keyId === undefined || assertion === undefined) {
       throw new Error("Invalid authentication");
@@ -297,4 +299,4 @@ MIT License. See `LICENSE` for more information.
 [coverage-shield]: https://img.shields.io/coveralls/github/uebelack/node-app-attest.svg?style=for-the-badge
 [coverage-url]: https://coveralls.io/github/uebelack/node-app-attest
 [license-shield]: https://img.shields.io/github/license/uebelack/node-app-attest.svg?style=for-the-badge
-[license-url]: https://github.com/uebelack/node-app-attest/blob/master/LICENSE
+[license-url]: https://github.com/uebelack/node-app-attest/blob/main/LICENSE

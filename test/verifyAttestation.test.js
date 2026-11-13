@@ -1,4 +1,5 @@
 import cbor from "cbor";
+import { encode as cborEncode } from "cbor2";
 import verifyAttestation from "../src/verifyAttestation.js";
 import attestationDevelopment from "./fixtures/attestation-development.json";
 import attestationProduction from "./fixtures/attestation-production.json";
@@ -6,6 +7,23 @@ import attestationProduction from "./fixtures/attestation-production.json";
 const ATTESTATION = Buffer.from(attestationDevelopment.attestation, "base64");
 const CHALLENGE = Buffer.from(attestationDevelopment.challenge, "base64");
 const KEY_ID = attestationDevelopment.keyId;
+
+// cbor's own encoder returns truncated output on Node.js 26, so the tests encode with cbor2,
+// which needs plain Uint8Arrays to write byte strings (it serializes Buffers via toJSON)
+const toBytes = (value) => {
+  if (Buffer.isBuffer(value)) {
+    return new Uint8Array(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(toBytes);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, toBytes(v)]));
+  }
+  return value;
+};
+
+const encode = (...values) => Buffer.concat(values.map((value) => cborEncode(toBytes(value))));
 
 const DECODED_ATTESTATION = cbor.Decoder.decodeAllSync(
   Buffer.from(attestationDevelopment.attestation, "base64"),
@@ -35,9 +53,7 @@ describe("verifyAttestation", () => {
     });
 
     expect(developmentResult.environment).toEqual("development");
-    expect(
-      developmentResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0,
-    ).toBeTruthy();
+    expect(developmentResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0).toBeTruthy();
     expect(developmentResult.keyId).toEqual(attestationDevelopment.keyId);
 
     expect(Buffer.from(developmentResult.receipt).toString("base64")).toEqual(
@@ -53,9 +69,7 @@ describe("verifyAttestation", () => {
     });
 
     expect(productionResult.keyId).toEqual(attestationProduction.keyId);
-    expect(
-      productionResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0,
-    ).toBeTruthy();
+    expect(productionResult.publicKey.indexOf("BEGIN PUBLIC KEY") > 0).toBeTruthy();
     expect(productionResult.environment).toEqual("production");
 
     expect(Buffer.from(productionResult.receipt).toString("base64")).toEqual(
@@ -127,7 +141,7 @@ describe("verifyAttestation", () => {
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
         allowDevelopmentEnvironment: true,
-        attestation: cbor.encode({}, {}),
+        attestation: encode({}, {}),
         challenge: CHALLENGE,
         keyId: KEY_ID,
       });
@@ -140,7 +154,7 @@ describe("verifyAttestation", () => {
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
         allowDevelopmentEnvironment: true,
-        attestation: cbor.encode({}),
+        attestation: encode({}),
         challenge: CHALLENGE,
         keyId: KEY_ID,
       });
@@ -153,7 +167,7 @@ describe("verifyAttestation", () => {
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
         allowDevelopmentEnvironment: true,
-        attestation: cbor.encode({
+        attestation: encode({
           fmt: "apple-appattest",
           attStmt: {
             x5c: [Buffer.from("test"), Buffer.from("test")],
@@ -173,7 +187,7 @@ describe("verifyAttestation", () => {
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
         allowDevelopmentEnvironment: true,
-        attestation: cbor.encode({
+        attestation: encode({
           fmt: "apple-appattest",
           attStmt: {
             x5c: [CLIENT_CERTIFICATE, CLIENT_CERTIFICATE],
@@ -193,7 +207,7 @@ describe("verifyAttestation", () => {
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
         allowDevelopmentEnvironment: true,
-        attestation: cbor.encode({
+        attestation: encode({
           fmt: "apple-appattest",
           attStmt: {
             x5c: [SUB_CA, SUB_CA],
@@ -213,7 +227,7 @@ describe("verifyAttestation", () => {
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
         allowDevelopmentEnvironment: true,
-        attestation: cbor.encode({
+        attestation: encode({
           fmt: "apple-appattest",
           attStmt: {
             x5c: [CLIENT_CERTIFICATE, SUB_CA_INVALID],
@@ -224,9 +238,7 @@ describe("verifyAttestation", () => {
         challenge: CHALLENGE,
         keyId: KEY_ID,
       });
-    }).toThrow(
-      "sub CA certificate is not signed by Apple App Attestation Root CA",
-    );
+    }).toThrow("sub CA certificate is not signed by Apple App Attestation Root CA");
   });
 
   it("should verify client certificate signature", () => {
@@ -235,7 +247,7 @@ describe("verifyAttestation", () => {
         bundleIdentifier: BUNDLE_IDENTIFIER,
         teamIdentifier: TEAM_IDENTIFIER,
         allowDevelopmentEnvironment: true,
-        attestation: cbor.encode({
+        attestation: encode({
           fmt: "apple-appattest",
           attStmt: {
             x5c: [CLIENT_CERTIFICATE_INVALID, SUB_CA],
@@ -246,9 +258,7 @@ describe("verifyAttestation", () => {
         challenge: CHALLENGE,
         keyId: KEY_ID,
       });
-    }).toThrow(
-      "client CA certificate is not signed by Apple App Attestation CA 1",
-    );
+    }).toThrow("client CA certificate is not signed by Apple App Attestation CA 1");
   });
 
   it("should verify challenge", async () => {

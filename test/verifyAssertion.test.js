@@ -10,8 +10,8 @@ const BUNDLE_IDENTIFIER = "io.uebelacker.AppAttestExample";
 const TEAM_IDENTIFIER = "V8H6LQ9448";
 
 describe("verifyAssertion", () => {
-  it("should verify assertion successfully", async () => {
-    verifyAssertion({
+  it("should verify assertion successfully", () => {
+    const result = verifyAssertion({
       assertion: ASSERTION,
       payload:
         '{"subject":"Lorem ipsum","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}',
@@ -19,6 +19,8 @@ describe("verifyAssertion", () => {
       bundleIdentifier: BUNDLE_IDENTIFIER,
       teamIdentifier: TEAM_IDENTIFIER,
     });
+
+    expect(result).toEqual({ signCount: 1 });
   });
 
   it("should verify bundleIdentifier", () => {
