@@ -1,39 +1,47 @@
 name: CI
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  unit-tests:
+  ci:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        node:
-          - 24
-          - 26
+        # previous LTS (= engines.node minimum) and current LTS
+        node: [24, 26]
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - uses: pnpm/action-setup@v6
-      - name: Install Dependencies
+          cache: pnpm
+
+      - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm run format:check
+
       - name: Lint
         run: pnpm run lint:check
-      - name: Format Check
-        run: pnpm run format:check
-      - name: Types
-        run: pnpm run types
+
+      - name: Check generated types are up to date
+        run: pnpm run types && git diff --exit-code types
+
       - name: Test
         run: pnpm test
+
       - name: Coveralls
-        if: matrix.node == '26'
-        uses: coverallsapp/github-action@master
+        if: matrix.node == 26
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
