@@ -1,6 +1,29 @@
-import cbor from "cbor";
+import { decode } from "cbor2";
 import { createHash, createVerify } from "crypto";
 
+/**
+ * @typedef {object} VerifyAssertionParams
+ * @property {Uint8Array} assertion The assertion object created by DCAppAttestService.generateAssertion.
+ * @property {string | Uint8Array} payload The client data the assertion was created for.
+ * @property {string} publicKey The PEM public key returned by verifyAttestation.
+ * @property {string} bundleIdentifier The app's bundle identifier, e.g. org.example.AppAttestExample.
+ * @property {string} teamIdentifier The Apple developer team identifier, e.g. V8H6LQ9448.
+ * @property {number} signCount The stored counter: 0 after the attestation, then the signCount returned by
+ *   the previous verifyAssertion call.
+ */
+
+/**
+ * @typedef {object} VerifyAssertionResult
+ * @property {number} signCount The new counter value. Store it for the next assertion.
+ */
+
+/**
+ * Verifies an App Attest assertion.
+ *
+ * @param {VerifyAssertionParams} params
+ * @returns {VerifyAssertionResult}
+ * @throws {Error} If the assertion is invalid.
+ */
 function verifyAssertion(params) {
   const { assertion, payload, publicKey, bundleIdentifier, teamIdentifier, signCount } = params;
 
@@ -24,15 +47,28 @@ function verifyAssertion(params) {
     throw new Error("publicKey is required");
   }
 
+  if (!Number.isInteger(signCount) || signCount < 0) {
+    throw new Error("signCount is required");
+  }
+
+  /** @type {any} untrusted CBOR, its structure is validated below */
   let decodedAssertion;
 
   try {
-    decodedAssertion = cbor.decodeAllSync(assertion)[0];
+    decodedAssertion = decode(assertion);
   } catch {
     throw new Error("invalid assertion");
   }
 
-  const { signature, authenticatorData } = decodedAssertion;
+  if (
+    !(decodedAssertion?.signature instanceof Uint8Array) ||
+    !(decodedAssertion.authenticatorData instanceof Uint8Array)
+  ) {
+    throw new Error("invalid assertion");
+  }
+
+  const { signature } = decodedAssertion;
+  const authenticatorData = Buffer.from(decodedAssertion.authenticatorData);
 
   // 1. Compute clientDataHash as the SHA256 hash of clientData.
   const clientDataHash = createHash("sha256").update(payload).digest();

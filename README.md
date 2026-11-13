@@ -51,7 +51,7 @@ const { signCount } = verifyAssertion({
   publicKey: String,
   bundleIdentifier: String (e.g. org.example.AppAttestExample),
   teamIdentifier: String (e.g. V8H6LQ9448),
-  signCount: Number,
+  signCount: Number (required: 0 after the attestation, then the signCount returned by the previous verifyAssertion),
 });
 
 ```

@@ -1,6 +1,6 @@
 {
   "name": "node-app-attest",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A JavaScript implementation of the App Attest protocol, which checks whether clients connecting to your server are valid instances of your app.",
   "keywords": [
     "app-attest",
@@ -39,13 +39,12 @@
   },
   "dependencies": {
     "asn1js": "^4.0.0",
-    "cbor": "^10.0.12",
+    "cbor2": "^2.4.1",
     "pkijs": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
     "@vitest/coverage-istanbul": "^5.1.0",
-    "cbor2": "^2.4.1",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
     "typescript": "^7.0.2",

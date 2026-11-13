@@ -169,9 +169,9 @@ importers:
       asn1js:
         specifier: ^4.0.0
         version: 4.0.0
-      cbor:
-        specifier: ^10.0.12
-        version: 10.0.12
+      cbor2:
+        specifier: ^2.4.1
+        version: 2.4.1
       pkijs:
         specifier: ^4.0.1
         version: 4.0.1(asn1js@4.0.0)
@@ -182,9 +182,6 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: ^5.1.0
         version: 5.1.0(vitest@5.1.0)
-      cbor2:
-        specifier: ^2.4.1
-        version: 2.4.1
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -906,10 +903,6 @@ packages:
     resolution: {integrity: sha512-h4OqPnSvIEUNCxTNb9pwMZPKjhNKO9bkPwQJOR7d5oBIrZR/CO098atrLl4AkQmB1p3opCvo2UFt4fhRSWC/vQ==}
     engines: {node: '>=22'}
 
-  cbor@10.0.12:
-    resolution: {integrity: sha512-exQDevYd7ZQLP4moMQcZkKCVZsXLAtUSflObr3xTh4xzFIv/xBCdvCd6L259kQOUP2kcTC0jvC6PpZIf/WmRXA==}
-    engines: {node: '>=20'}
-
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
     engines: {node: '>=18'}
@@ -1026,10 +1019,6 @@ packages:
     resolution: {integrity: sha512-uKdg2G3GNCKQn9byYOpxbGqrT2fGO5KRt5J/8b3pok8rT6qxGWF6hxMyJiEYtAf+FVyYuD9hRaDqX5uPFYJ4ZQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
-
-  nofilter@3.1.0:
-    resolution: {integrity: sha512-l2NNj07e9afPnhAhvgVrCD/oy2Ai1yfLpuo3EpiO1jFTsB4sFz6oIfAfSZyQzVpkZQ9xS8ZS5g1jCBgq4Hwo0g==}
-    engines: {node: '>=12.19'}
 
   obug@3.0.0:
     resolution: {integrity: sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==}
@@ -1640,10 +1629,6 @@ snapshots:
     dependencies:
       '@cto.af/wtf8': 1.0.0
 
-  cbor@10.0.12:
-    dependencies:
-      nofilter: 3.1.0
-
   chai@6.3.0: {}
 
   detect-libc@2.1.2: {}
@@ -1723,8 +1708,6 @@ snapshots:
       source-map-js: 1.2.2
 
   nanoid@3.3.20: {}
-
-  nofilter@3.1.0: {}
 
   obug@3.0.0: {}
 
