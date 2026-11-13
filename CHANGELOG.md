@@ -14,6 +14,7 @@
 
 ### Tests
 
+- ✅ encode test attestations with cbor2, cbor's encoder is broken on Node.js 26
 - ✅ migrate from Jest to Vitest
 - ✅ assert the result of a successful assertion verification
 
@@ -24,10 +25,15 @@
 
 ### Chores
 
+- 🔧 improve linting workflow and add jest coverage configuration
 - 📦 tidy package metadata and publish only src and types
 - 🔧 replace ESLint and Prettier with oxlint and oxfmt
 - 🔧 migrate from Yarn to pnpm
 - 🔧 improve linting workflow and add jest coverage configuration
+
+### Other
+
+- 🔀 merge main into upgrade
 
 ## [1.0.1] - 2026-02-20
 

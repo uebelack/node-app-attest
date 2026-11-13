@@ -182,6 +182,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: ^5.1.0
         version: 5.1.0(vitest@5.1.0)
+      cbor2:
+        specifier: ^2.4.1
+        version: 2.4.1
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -213,6 +216,10 @@ packages:
   '@babel/types@7.29.14':
     resolution: {integrity: sha512-UjI/dKmwJwT9pOszJitq2G6EObZPnsZUfdCr92z2TlF3EZK9J3EdfOKUrCzHl6wFthbzwhzl1Soc/UIwxRiq6w==}
     engines: {node: '>=6.9.0'}
+
+  '@cto.af/wtf8@1.0.0':
+    resolution: {integrity: sha512-qI0XnZxcj/FmASB8XXWqG49bSIzu0I/02deAjhnTni9IZ7KMRVlh8EFLE+mmJlMA169lET6rTCFhEsZSjOwlhA==}
+    engines: {node: '>=22'}
 
   '@emnapi/core@2.0.0-beta.2':
     resolution: {integrity: sha512-MzCVoWtcg4Pm2B3je5mMvYMvj3MmBKw+fU7vbsJc9/iT8ip6/eYIHo/Dsm/mr+wsHB6SEyJDuxB09Yy6r/8+4A==}
@@ -895,6 +902,10 @@ packages:
     resolution: {integrity: sha512-QJYdJHpGNj4dAfRrgQAu8V5OEFVgiALJ8YFR4c1BuNYzvoDU86yEg+9SXu/AbGyMaLAn17qdMmwsCc2Ry2nHPg==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
+  cbor2@2.4.1:
+    resolution: {integrity: sha512-h4OqPnSvIEUNCxTNb9pwMZPKjhNKO9bkPwQJOR7d5oBIrZR/CO098atrLl4AkQmB1p3opCvo2UFt4fhRSWC/vQ==}
+    engines: {node: '>=22'}
+
   cbor@10.0.12:
     resolution: {integrity: sha512-exQDevYd7ZQLP4moMQcZkKCVZsXLAtUSflObr3xTh4xzFIv/xBCdvCd6L259kQOUP2kcTC0jvC6PpZIf/WmRXA==}
     engines: {node: '>=20'}
@@ -1221,6 +1232,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.29.14
       '@babel/helper-validator-identifier': 7.29.7
+
+  '@cto.af/wtf8@1.0.0': {}
 
   '@emnapi/core@2.0.0-beta.2':
     dependencies:
@@ -1622,6 +1635,10 @@ snapshots:
   assertion-error@2.0.1: {}
 
   bytestreamjs@3.0.0: {}
+
+  cbor2@2.4.1:
+    dependencies:
+      '@cto.af/wtf8': 1.0.0
 
   cbor@10.0.12:
     dependencies:
